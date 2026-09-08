@@ -1,0 +1,34 @@
+sequenceDiagram
+    autonumber
+    participant Svc as Dịch vụ nhập và phát hiện
+    participant DB as CSDL HTQLHDK
+    loop Mỗi dòng đã phân loại của lô Processing； 0 Alert thì bỏ qua
+    alt Dòng lỗi dữ liệu hoặc ngoài phạm vi
+    Svc->>DB: TX: import_error đã che； đánh dấu cần rà soát scope nếu có
+    else Dòng hợp lệ
+    Svc->>Svc: Chuẩn hóa tuple gốc； tính fingerprint； tạo dữ liệu hiển thị đã che
+    Svc->>DB: BEGIN； khóa asset； tìm/tạo Finding bằng fingerprint
+    DB-->>Svc: Finding mới hoặc hiện có, trạng thái và phiên bản
+    Svc->>DB: Tạo/lấy Occurrence UNIQUE(finding_id, scan_id)
+    Svc->>DB: Ghi Observation UNIQUE(batch_id, record_locator)
+    Svc->>DB: Cập nhật first_seen=min, last_seen=max theo observed_at
+    alt Finding vừa tạo
+    Svc->>DB: Giữ New； chưa có Final Severity
+    else Closed và có lần xuất hiện mới sau lần đóng
+    Svc->>DB: Reopened； audit trỏ trigger_occurrence_id
+    else False Positive có lần xuất hiện mới
+    Svc->>DB: Thêm finding_review Recheck + căn cứ occurrence + audit
+    else Đã có và không đủ điều kiện mở lại
+    Svc->>DB: Giữ trạng thái； audit ghi nhận nguồn khi cần
+    end
+    alt Ghi dòng và audit thành công
+    Svc->>DB: COMMIT giao dịch của dòng
+    else Lỗi ghi/phiên bản hoặc audit
+    Svc->>DB: ROLLBACK dòng； ghi lỗi đã che ở giao dịch riêng
+    Svc->>Svc: Phân loại lỗi kỹ thuật để SD-05 kết thúc Failed
+    end
+    end
+    end
+    Svc->>DB: Tổng hợp số Observation thành công và ImportError
+    DB-->>Svc: Thống kê để SD-05 đối soát kết thúc lô
+    Note over Svc,DB: Không tạo phiếu khắc phục trong vòng lặp； không giữ Finding mồ côi

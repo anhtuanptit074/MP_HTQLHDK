@@ -1,0 +1,16 @@
+{
+  "status": "PASS",
+  "checks_total": 15,
+  "checks_passed": 15,
+  "sequence_count": 19,
+  "use_case_count": 63,
+  "table_count": 27,
+  "source_hashes": {
+    "doi_tuong_sd_quy_trinh_hd.md": "8be9f0d04240f73443b3923d806e5653c922665af2f3ec1f69961e73e58a7db4",
+    "dinh_dang_use_case_activity.md": "ee6ad8232ab3b1be241747b9195fe49d77f3a25cd679e559b5a6afca19ef3137",
+    "database\\sql\\01_schema.sql": "b78afd73229a4ff38d48f9177624c4a29f8d6d9f3571511f0bd9917af9eb1ec0",
+    "database\\sql\\02_guards_and_views.sql": "3d414eb5de8a0da0d8d92375384d7fa4d804cc2a60db53f7811f07dc685cfc3a",
+    "database\\sql\\03_reference_data.sql": "e01b6efb993b6947e3e14f8924916be9eb64d6c70245be20bf4b1de567d7f009"
+  },
+  "errors": []
+}

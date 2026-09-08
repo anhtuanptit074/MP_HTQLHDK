@@ -1,0 +1,66 @@
+@startuml
+hide footbox
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 58
+skinparam BoxPadding 8
+skinparam ArrowColor #334155
+skinparam sequenceParticipantBackgroundColor #EAF2FB
+skinparam sequenceParticipantBorderColor #334155
+skinparam sequenceLifeLineBorderColor #94A3B8
+skinparam sequenceGroupBorderColor #64748B
+skinparam sequenceGroupHeaderFontColor #0F172A
+skinparam sequenceGroupBackgroundColor #F8FAFC
+skinparam sequenceReferenceBackgroundColor #EFF6FF
+skinparam sequenceReferenceBorderColor #93C5FD
+skinparam NoteBackgroundColor #FFF7E8
+skinparam NoteBorderColor #D9A441
+autonumber
+title SD-00 — Kiểm quyền và giao dịch dùng chung
+actor "Người dùng" as User
+boundary "Giao diện" as UI
+control "Dịch vụ nghiệp vụ" as Svc
+control "Kiểm soát quyền" as Auth
+database "CSDL HTQLHDK" as DB
+User -> UI : Thực hiện một thao tác
+UI -> Svc : Gửi yêu cầu và phiên xác thực
+Svc -> Auth : Xác thực và kiểm quyền hiện hành
+Auth -> DB : Đọc tài khoản, grant và quan hệ tài sản/phiếu
+DB --> Auth : Dữ liệu kiểm quyền
+Auth --> Svc : Cho phép hoặc từ chối
+alt Không được phép
+  Svc -> DB : Giao dịch riêng: audit từ chối đã che
+  Svc --> UI : Từ chối, không trả dữ liệu nghiệp vụ
+else Được phép
+  alt Thao tác ghi
+    Svc -> DB : BEGIN; khóa tài sản rồi các đối tượng liên quan
+    Svc -> Auth : Kiểm lại quyền tại điểm áp dụng
+    Auth --> Svc : Kết quả quyền hiện hành
+    Svc -> DB : Đọc trạng thái, row_version và con trỏ hiện hành
+    DB --> Svc : Bản ghi đang hiệu lực
+    alt Quyền, dữ liệu và phiên bản hợp lệ
+      Svc -> DB : Ghi nghiệp vụ + con trỏ + audit
+      alt Tất cả thao tác ghi thành công
+        Svc -> DB : COMMIT
+        Svc --> UI : Thành công, trả phiên bản mới
+      else Lỗi ghi dữ liệu hoặc audit
+        Svc -> DB : ROLLBACK
+        Svc -> DB : Giao dịch riêng: audit lỗi đã che
+        Svc --> UI : Thất bại; không áp dụng một phần
+      end
+    else Hết quyền, sai trạng thái hoặc bản đã cũ
+      Svc -> DB : ROLLBACK; audit từ chối bằng giao dịch riêng
+      Svc --> UI : Từ chối hoặc yêu cầu tải lại
+    end
+  else Thao tác đọc hoặc tải
+    Svc -> DB : Đọc dữ liệu được lọc theo quyền tài sản/phiếu
+    DB --> Svc : Dữ liệu trong phạm vi
+    Svc -> Svc : Che dữ liệu; kiểm quyền nhạy cảm khi cần
+    Svc -> DB : Ghi audit theo loại truy cập
+    Svc --> UI : Chỉ phát hành sau khi đạt kiểm soát bắt buộc
+  end
+end
+@enduml

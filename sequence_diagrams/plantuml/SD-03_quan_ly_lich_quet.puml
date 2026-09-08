@@ -1,0 +1,64 @@
+@startuml
+hide footbox
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 58
+skinparam BoxPadding 8
+skinparam ArrowColor #334155
+skinparam sequenceParticipantBackgroundColor #EAF2FB
+skinparam sequenceParticipantBorderColor #334155
+skinparam sequenceLifeLineBorderColor #94A3B8
+skinparam sequenceGroupBorderColor #64748B
+skinparam sequenceGroupHeaderFontColor #0F172A
+skinparam sequenceGroupBackgroundColor #F8FAFC
+skinparam sequenceReferenceBackgroundColor #EFF6FF
+skinparam sequenceReferenceBorderColor #93C5FD
+skinparam NoteBackgroundColor #FFF7E8
+skinparam NoteBorderColor #D9A441
+autonumber
+title SD-03 — Tạo, sửa, kích hoạt và tạm dừng lịch quét
+actor "Chuyên viên ATTT" as Sec
+actor "Chủ tài sản" as Owner
+boundary "Giao diện" as UI
+control "Dịch vụ lịch quét" as Svc
+database "CSDL HTQLHDK" as DB
+Sec -> UI : Tạo, sửa, kích hoạt hoặc tạm dừng lịch
+UI -> Svc : Gửi cấu hình và thao tác
+ref over UI,DB : SD-00: kiểm ATTT trong tài sản; khóa và audit
+alt Tạm dừng lịch Active
+  Svc -> DB : TX: scan_schedule Paused + audit
+  Svc --> UI : Đã tạm dừng; giữ các lần quét
+else Tạo hoặc sửa lịch
+  Svc -> DB : Đọc asset, scope Approved, rule và khung giờ
+  DB --> Svc : Cấu hình có hiệu lực
+  Svc -> Svc : Kiểm URL, Exclude ưu tiên, múi giờ và chu kỳ
+  alt Dữ liệu hoặc phạm vi sai
+    Svc --> UI : Trả lỗi; chưa áp dụng thay đổi
+  else Hợp lệ
+    Owner -> UI : Xác nhận thời gian của tài sản
+    UI -> Svc : Gửi xác nhận trên cấu hình đã xem
+    ref over UI,DB : SD-00: kiểm Owner và cấu hình chưa đổi
+    Svc -> DB : Tìm lịch trùng thời gian
+    DB --> Svc : Danh sách xung đột nếu có
+    opt Có xung đột
+      Svc --> UI : Cảnh báo để ATTT rà soát
+    end
+    Sec -> UI : Xác nhận lưu hoặc kích hoạt
+    UI -> Svc : Gửi thao tác cuối
+    ref over UI,DB : SD-00: kiểm lại quyền và dữ liệu hiện hành
+    alt Lưu Draft hoặc sửa lịch chưa Active
+      Svc -> DB : TX: lưu lịch, xác nhận thời gian và audit
+    else Kích hoạt, tiếp tục hoặc sửa lịch Active
+      alt Asset Active, scope đã duyệt và lịch đủ điều kiện
+        Svc -> DB : TX: lịch Active, approved_by/at, next_due_at + audit
+      else Không đủ điều kiện
+        Svc --> UI : Không áp dụng; giữ cấu hình hiệu lực trước
+      end
+    end
+  end
+end
+note over Svc,DB : Thay đổi asset/scope/tần suất có lịch sử; SD-04 tạo từng lần quét
+@enduml

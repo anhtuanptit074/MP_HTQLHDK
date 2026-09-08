@@ -1,0 +1,52 @@
+@startuml
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam backgroundColor #FFFFFF
+skinparam ArrowColor #334155
+skinparam activityBackgroundColor #EFF6FF
+skinparam activityBorderColor #334155
+skinparam activityDiamondBackgroundColor #FFF7ED
+skinparam activityDiamondBorderColor #9A3412
+skinparam usecaseBackgroundColor #EFF6FF
+skinparam usecaseBorderColor #334155
+skinparam packageStyle rectangle
+skinparam maxMessageSize 70
+!pragma useVerticalIf on
+title AD-16 — Thời hạn xử lý và thông báo tối thiểu
+|Hệ thống|
+start
+:Nhận sự kiện nghiệp vụ / kỳ kiểm tra thời hạn;
+if (Cần đổi người phụ trách hoặc thời hạn?) then (Có)
+  |Chuyên viên ATTT|
+  :Xác định người / hạn mới theo Final Severity\nvà bảng thời hạn được đơn vị phê duyệt; nhập lý do;
+  |Hệ thống|
+  if (Đúng quyền, đủ dữ liệu và chính sách thời hạn?) then (Có)
+    :Lưu người / hạn cũ và mới, lý do,\nngười thực hiện, thời điểm; audit;\nKhông tự đổi trạng thái Finding;
+  else (Không)
+    :Không tự đặt SLA; giữ giá trị cũ;\nATTT hoàn thiện theo chính sách;
+    stop
+  endif
+endif
+:Ghi nhận phiếu sắp đến hạn / quá hạn;\nTổng hợp đúng phạm vi các danh sách ở mục 9.2;
+if (Có sự kiện thông báo thuộc mục 9.1?) then (Có)
+  :Xác định người liên quan theo nhiệm vụ / phạm vi;
+  :Thông báo mã tài sản, mã phát hiện,\ntrạng thái và liên kết vào hệ thống;\nKhông Attack, Evidence hoặc bí mật;
+else (Không)
+  :Không tạo thông báo ngoài phạm vi;
+endif
+note right
+Sự kiện: lịch sắp đến hạn / bỏ lỡ; lô Failed / Partial;
+Finding Critical / High; phiếu mới / sắp hạn / quá hạn;
+yêu cầu xác minh; đề nghị rủi ro chờ duyệt / sắp hết hạn.
+Không tự tích hợp email, BI hay ticket bên ngoài.
+end note
+stop
+legend bottom
+K-01: Mọi thao tác người dùng phải kiểm tra quyền hiện hành + phạm vi phía máy chủ.
+Không đạt K-01: từ chối, ghi audit, không thực hiện bước đọc / ghi kế tiếp.
+K-02: Mọi thay đổi, phê duyệt, từ chối, lỗi và truy cập nhạy cảm theo nguồn 8.5 đều ghi audit.
+Audit: người, thời điểm, đối tượng, hành động, kết quả; trước / sau và bằng chứng khi có.
+Các lời gọi AD-xx phải bảo toàn tiền điều kiện, mọi nhánh lỗi và trạng thái đầu ra của AD được gọi.
+endlegend
+@enduml

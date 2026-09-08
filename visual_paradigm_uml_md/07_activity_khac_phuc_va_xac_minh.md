@@ -1,0 +1,112 @@
+# AD-06 — Khắc phục và quét xác minh
+
+**Nguồn:** mục 5.4; 6.5; 7.2; 7.5 của tài liệu nguồn.
+
+**Điều kiện vào:** ATTT tiếp tục Triaged/Reopened; người được giao tiếp tục Assigned/In Progress; xác minh từ Pending Verification.
+
+**Kết quả:** Closed chỉ do ATTT với ZAP mới hợp lệ; còn lỗi hoặc kết quả không hợp lệ → Reopened.
+
+**Truy vết UC:** UC-R01, UC-R02, UC-R03, UC-R04, UC-R05, UC-R06, UC-R07, UC-R08, UC-R09, UC-R10, UC-R11.
+
+```plantuml
+@startuml
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam backgroundColor #FFFFFF
+skinparam ArrowColor #334155
+skinparam activityBackgroundColor #EFF6FF
+skinparam activityBorderColor #334155
+skinparam activityDiamondBackgroundColor #FFF7ED
+skinparam activityDiamondBorderColor #9A3412
+skinparam usecaseBackgroundColor #EFF6FF
+skinparam usecaseBorderColor #334155
+skinparam packageStyle rectangle
+skinparam maxMessageSize 70
+!pragma useVerticalIf on
+title AD-06 — Khắc phục và quét xác minh
+|Chuyên viên ATTT|
+start
+:Mở Finding / phiếu trong phạm vi;\nKiểm tra trạng thái hiện hành;
+|Hệ thống|
+if (Đúng quyền / phạm vi và trạng thái thuộc\nTriaged, Reopened, Assigned, In Progress, Pending Verification?) then (Có)
+else (Không)
+  :Từ chối; audit;
+  stop
+endif
+if (Finding = Triaged hoặc Reopened?) then (Có)
+  |Chuyên viên ATTT|
+  :Tạo / liên kết phiếu, không tạo phiếu trùng;\nChọn người phụ trách và thời hạn theo chính sách;\nReopened phải xác định thời hạn mới;
+  |Hệ thống|
+  if (Có người phụ trách và thời hạn hợp lệ?) then (Có)
+    :Finding = Assigned; lưu Assignment và audit;
+  else (Không)
+    :Không chuyển; yêu cầu hoàn thiện phân công;
+    stop
+  endif
+endif
+|Chủ sở hữu / ATTT|
+if (Đề nghị rủi ro khi Assigned hoặc In Progress?) then (Có)
+  :Thực hiện AD-08;
+  |Hệ thống|
+  if (Pending Risk Acceptance hoặc Risk Accepted?) then (Có)
+    :Theo dõi bằng AD-08 / AD-10 / AD-13;
+    stop
+  endif
+endif
+|Hệ thống|
+if (Finding = Assigned?) then (Có)
+  |Nhóm khắc phục kỹ thuật|
+  :Mở phiếu được giao và xác nhận tiếp nhận;
+  |Hệ thống|
+  :Kiểm tra quyền theo phiếu;\nFinding = In Progress; audit;
+endif
+if (Finding = In Progress?) then (Có)
+  repeat
+    |Nhóm khắc phục kỹ thuật|
+    :Khắc phục ngoài hệ thống quản lý;\nCập nhật tiến độ, nguyên nhân, biện pháp,\nnhận xét và bằng chứng; gửi chờ xác minh;
+    |Hệ thống|
+    :Kiểm tra quyền theo phiếu, biện pháp và bằng chứng;\nThiếu thì giữ In Progress và yêu cầu bổ sung;
+  repeat while (Thiếu biện pháp hoặc bằng chứng?) is (Có) not (Không)
+  :Finding = Pending Verification; audit;
+endif
+|Chuyên viên ATTT|
+:Rà soát bằng chứng; tạo VerificationRequest\ncho Finding, tài sản, scope và nhóm vận hành;
+|Nhóm vận hành quét|
+:Thực hiện ZAP xác minh bên ngoài hệ thống;
+if (Có kết quả quét mới?) then (Có)
+  :Xuất Traditional JSON / XML;\nNhập qua AD-04 và gắn lần quét xác minh;
+else (Không)
+  :Ghi thất bại / bỏ lỡ và lý do;\nCung cấp kết quả không hợp lệ cho ATTT;
+endif
+|Hệ thống|
+if (Báo cáo mới đúng yêu cầu xác minh,\nđã nhập và kết quả đối chiếu hợp lệ?) then (Có)
+  :Đối chiếu fingerprint;
+else (Không)
+  |Chuyên viên ATTT|
+  :Xác nhận kết quả không hợp lệ; mở lại;
+  |Hệ thống|
+  :Finding = Reopened; audit;\nTiếp tục đầu AD-06 để phân công với hạn mới;
+  stop
+endif
+|Chuyên viên ATTT|
+if (Fingerprint còn xuất hiện?) then (Có)
+  :Xác nhận vẫn còn lỗ hổng; mở lại;
+  |Hệ thống|
+  :Finding = Reopened; audit;\nTiếp tục đầu AD-06 để phân công với hạn mới;
+else (Không)
+  |Chuyên viên ATTT|
+  :Xác nhận không còn lỗ hổng; đóng;
+  |Hệ thống|
+  :Kiểm tra quyền ATTT và Pending Verification;\nFinding = Closed; lưu người, thời điểm,\nbáo cáo xác minh và audit;
+endif
+stop
+legend bottom
+K-01: Mọi thao tác người dùng phải kiểm tra quyền hiện hành + phạm vi phía máy chủ.
+Không đạt K-01: từ chối, ghi audit, không thực hiện bước đọc / ghi kế tiếp.
+K-02: Mọi thay đổi, phê duyệt, từ chối, lỗi và truy cập nhạy cảm theo nguồn 8.5 đều ghi audit.
+Audit: người, thời điểm, đối tượng, hành động, kết quả; trước / sau và bằng chứng khi có.
+Các lời gọi AD-xx phải bảo toàn tiền điều kiện, mọi nhánh lỗi và trạng thái đầu ra của AD được gọi.
+endlegend
+@enduml
+```

@@ -1,0 +1,28 @@
+\set ON_ERROR_STOP on
+
+DO $$
+DECLARE
+    business_table_count integer;
+BEGIN
+    SELECT count(*) INTO business_table_count
+    FROM information_schema.tables
+    WHERE table_schema = 'htqlhdk' AND table_type = 'BASE TABLE';
+
+    IF business_table_count <> 27 THEN
+        RAISE EXCEPTION 'Expected 27 HTQLHDK tables, found %', business_table_count;
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1 FROM htqlhdk_migration.schema_migration
+        WHERE version = 'V001' AND status = 'Applied' AND applied_at IS NOT NULL
+    ) THEN
+        RAISE EXCEPTION 'Migration V001 is not recorded as Applied';
+    END IF;
+
+    IF current_setting('TimeZone') <> 'UTC' THEN
+        RAISE EXCEPTION 'Database session timezone must be UTC, found %', current_setting('TimeZone');
+    END IF;
+END $$;
+
+SELECT 'PASS: V001 applied; 27 business tables; timezone UTC.' AS result;
+

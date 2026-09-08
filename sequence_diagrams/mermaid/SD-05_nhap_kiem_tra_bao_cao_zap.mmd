@@ -1,0 +1,47 @@
+sequenceDiagram
+    autonumber
+    actor Ops as Nhóm vận hành quét
+    participant UI as Giao diện
+    participant Svc as Dịch vụ nhập báo cáo
+    participant Parser as Bộ đọc báo cáo ZAP
+    participant Store as Kho tệp riêng
+    participant DB as CSDL HTQLHDK
+    Ops->>UI: Chọn tài sản, lần quét và tệp ZAP
+    UI->>Svc: Tải tệp và metadata
+    Note over UI,DB: SD-00: Ops； Asset Active； scan Completed/Result Imported đúng asset
+    Svc->>Svc: Nhận có giới hạn； tính SHA-256 từ byte gốc
+    Svc->>DB: Tìm lô theo asset_id, scan_id, file_sha256
+    DB-->>Svc: Lô hiện có hoặc chưa có
+    alt Lô đã tồn tại
+    Svc-->>UI: Trả batch_id và trạng thái cũ； không nhập lại
+    else Lô mới
+    Svc->>Store: Lưu tệp gốc riêng, mã hóa và bất biến
+    Store-->>Svc: object_key, checksum, key_ref
+    Svc->>DB: TX: tạo import_batch Received + metadata gốc + audit
+    Note over Svc,DB: UNIQUE phân xử nhập đồng thời； bên thua trả lô cũ và dừng
+    Svc->>DB: TX: chuyển Validating + audit
+    Svc->>Parser: Kiểm Traditional JSON/XML, cấu trúc, asset/scope
+    Parser-->>Svc: Lỗi toàn lô hoặc tập dòng hợp lệ/lỗi
+    alt Sai toàn lô hoặc tất cả dòng đều sai
+    Svc->>DB: TX: Rejected + import_error đã che + audit
+    Svc-->>UI: Lô bị từ chối； không tạo Finding
+    else Lô đạt kiểm tra toàn cục
+    Svc->>DB: TX: Processing + audit
+    Note over Svc,DB: SD-06: chuẩn hóa từng dòng và lưu lỗi riêng
+    alt Gặp lỗi kỹ thuật
+    Svc->>DB: TX riêng: Failed, failure_code, bộ đếm thực tế + audit
+    Svc-->>UI: Lỗi xử lý； giữ truy vết phần đã commit
+    else Không có lỗi kỹ thuật
+    Svc->>DB: Đối soát Observation, ImportError và tổng bản ghi
+    alt Có dòng thành công và lỗi
+    Svc->>DB: TX: Partially Completed + bộ đếm + audit
+    else Tất cả hợp lệ, kể cả 0 Alert
+    Svc->>DB: TX: Completed + bộ đếm + audit
+    end
+    Svc->>DB: Cùng TX hoàn tất: scan Result Imported； COMMIT
+    Svc-->>UI: batch_id, trạng thái và thống kê đã che
+    end
+    end
+    end
+    Note over Svc,Store: Lỗi kho/metadata: không báo thành công； đối soát tệp chưa liên kết
+    Note over Svc,DB: Rejected/Failed không hạ trạng thái của scan đã có lô nhập thành công

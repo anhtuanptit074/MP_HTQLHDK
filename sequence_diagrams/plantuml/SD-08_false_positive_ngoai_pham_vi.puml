@@ -1,0 +1,55 @@
+@startuml
+hide footbox
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 58
+skinparam BoxPadding 8
+skinparam ArrowColor #334155
+skinparam sequenceParticipantBackgroundColor #EAF2FB
+skinparam sequenceParticipantBorderColor #334155
+skinparam sequenceLifeLineBorderColor #94A3B8
+skinparam sequenceGroupBorderColor #64748B
+skinparam sequenceGroupHeaderFontColor #0F172A
+skinparam sequenceGroupBackgroundColor #F8FAFC
+skinparam sequenceReferenceBackgroundColor #EFF6FF
+skinparam sequenceReferenceBorderColor #93C5FD
+skinparam NoteBackgroundColor #FFF7E8
+skinparam NoteBorderColor #D9A441
+autonumber
+title SD-08 — Kết quả sai, ngoài phạm vi và rà soát lại
+actor "Chuyên viên ATTT" as Sec
+actor "Người rà soát độc lập" as Reviewer
+boundary "Giao diện" as UI
+control "Dịch vụ phân tích phát hiện" as Svc
+database "CSDL HTQLHDK" as DB
+Sec -> UI : Gửi kết luận và căn cứ
+UI -> Svc : finding_id, loại review, lý do, evidence
+ref over UI,DB : SD-00: ATTT, phiên bản và quyền bằng chứng
+Svc -> DB : Đọc trạng thái, mức cuối hoặc mức nguồn, review hiện hành
+DB --> Svc : Dữ liệu để kiểm điều kiện
+alt New và đề nghị False Positive
+  Svc -> DB : TX: review False Positive, Proposed + bằng chứng + audit
+  opt Critical/High theo mức cuối hoặc nguồn khi chưa có mức cuối
+    Reviewer -> UI : Rà soát độc lập và kết luận
+    UI -> Svc : Gửi quyết định người thứ hai
+    ref over UI,DB : SD-00: khác người đề xuất và đúng thẩm quyền
+    Svc -> DB : TX: lưu kết quả rà soát + audit
+  end
+  alt Có lý do, bằng chứng và đủ chấp thuận bắt buộc
+    Svc -> DB : TX: review Applied; New thành False Positive; audit trỏ review
+  else Thiếu điều kiện hoặc bị từ chối
+    Svc --> UI : Giữ New; chờ bổ sung hoặc ghi review Rejected
+  end
+else New và bản ghi sai hoặc ngoài phạm vi
+  Svc -> DB : TX: review Cancelled Applied + lý do; Finding Cancelled + audit
+else False Positive có yêu cầu Recheck
+  Svc -> DB : TX: lưu kết luận Recheck và evidence/occurrence + audit
+  Svc --> UI : Hiển thị kết luận; giữ trạng thái theo quy tắc nguồn
+else Trạng thái không phù hợp
+  Svc --> UI : Từ chối áp dụng kết luận
+end
+note over Svc,DB : Không xóa Finding/báo cáo; không đổi current_review_id mức độ sang review phân loại
+@enduml

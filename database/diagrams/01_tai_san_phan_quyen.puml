@@ -1,0 +1,68 @@
+@startuml
+hide circle
+skinparam linetype polyline
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+skinparam classBackgroundColor #EFF6FF
+skinparam classBorderColor #334155
+skinparam ArrowColor #64748B
+skinparam nodesep 50
+skinparam ranksep 70
+left to right direction
+title HTQLHDK 2.0 — 01 tai san phan quyen
+entity "Người dùng\napp_user" as app_user {
+  * id : bigint <<PK>>
+}
+entity "Nhóm công tác\nteam" as team {
+  * id : bigint <<PK>>
+  * code : varchar 
+}
+entity "Thành viên nhóm\nteam_member" as team_member {
+  * id : bigint <<PK>>
+  * team_id : bigint <<FK>>
+  * user_id : bigint <<FK>>
+}
+entity "Vai trò, phạm vi tài sản và quyền nhạy cảm\nuser_role" as user_role {
+  * id : bigint <<PK>>
+  * user_id : bigint <<FK>>
+  * role_code : user_role_code 
+  asset_id : bigint <<FK>>
+}
+entity "Tài sản website\nasset" as asset {
+  * id : bigint <<PK, FK>>
+  * code : varchar 
+  owner_id : bigint <<FK>>
+  technical_team_id : bigint <<FK>>
+  security_officer_id : bigint <<FK>>
+  * status : asset_status 
+  current_scope_id : bigint <<FK>>
+}
+entity "Phiên bản phạm vi quét\nasset_scope_revision" as asset_scope_revision {
+  * id : bigint <<PK>>
+  * asset_id : bigint <<FK>>
+  * version_no : integer 
+  * status : text 
+}
+entity "Mục cho phép hoặc loại trừ\nasset_scope_rule" as asset_scope_rule {
+  * id : bigint <<PK>>
+  * scope_id : bigint <<FK>>
+  * effect : text 
+  * target_value : text 
+}
+entity "Khung giờ quét được phép\nasset_scan_window" as asset_scan_window {
+  * id : bigint <<PK>>
+  * scope_id : bigint <<FK>>
+}
+team ||--o{ team_member
+app_user ||--o{ team_member
+app_user ||--o{ user_role
+asset |o--o{ user_role
+app_user |o--o{ asset
+team |o--o{ asset
+app_user |o--o{ asset
+asset_scope_revision |o--o| asset
+asset ||--o{ asset_scope_revision
+asset_scope_revision ||--o{ asset_scope_rule
+asset_scope_revision ||--o{ asset_scan_window
+@enduml

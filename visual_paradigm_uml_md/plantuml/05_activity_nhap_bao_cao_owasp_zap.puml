@@ -1,0 +1,73 @@
+@startuml
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam backgroundColor #FFFFFF
+skinparam ArrowColor #334155
+skinparam activityBackgroundColor #EFF6FF
+skinparam activityBorderColor #334155
+skinparam activityDiamondBackgroundColor #FFF7ED
+skinparam activityDiamondBorderColor #9A3412
+skinparam usecaseBackgroundColor #EFF6FF
+skinparam usecaseBorderColor #334155
+skinparam packageStyle rectangle
+skinparam maxMessageSize 70
+!pragma useVerticalIf on
+title AD-04 — Nhập và kiểm tra báo cáo ZAP
+|Nhóm vận hành quét|
+start
+:Chọn tài sản, lần quét và tải tệp;\nCung cấp phiên bản ZAP, mẫu báo cáo,\nphiên quét nếu có, thời gian bắt đầu / kết thúc;
+|Hệ thống|
+if (Xác thực và có quyền nhập trên tài sản?) then (Có)
+else (Không)
+  :Từ chối trước khi tạo lô; audit;
+  stop
+endif
+if (Xác định được tài sản và lần quét?) then (Có)
+else (Không)
+  :Yêu cầu chọn đúng tài sản / lần quét; audit;
+  stop
+endif
+:Tính checksum, kiểm tra khóa lô\n(asset, scan_occurrence, checksum);
+if (Khóa lô đã tồn tại?) then (Có)
+  :Trả kết quả / trạng thái của lô hiện có;\nKhông tạo lô, occurrence, Finding hoặc phiếu mới; audit;
+  stop
+endif
+:Tạo ImportBatch = Received với khóa duy nhất;\nLưu người / thời điểm; chuyển Validating;
+if (Asset Active, lần quét hợp lệ,\nđúng tài sản; tệp đúng loại / kích thước /\ncấu trúc Traditional JSON hoặc XML?) then (Có)
+else (Không)
+  :ImportBatch = Rejected; lưu lý do;\nKhông tạo Finding; audit;
+  stop
+endif
+:Kiểm tra phạm vi lô và từng bản ghi;\nChuẩn bị danh sách hợp lệ / ImportError;\nChưa ghi Finding;
+if (Có URL ngoài phạm vi?) then (Có)
+  :Ghi lỗi phạm vi; yêu cầu ATTT rà soát;
+endif
+if (Lô sai tài sản / phạm vi hoặc toàn bộ\nbản ghi không đạt cấu trúc / phạm vi?) then (Có)
+  :ImportBatch = Rejected; không tạo Finding;\nGiữ kết quả lỗi và audit;
+  stop
+endif
+:Lưu RawReport bất biến + checksum\ntrong vùng mã hóa, kiểm soát truy cập;\nChe bí mật ở bản hiển thị, không sửa tệp gốc;
+:ImportBatch = Processing;
+:Xử lý các bản ghi hợp lệ qua AD-12;\nBáo cáo hợp lệ có 0 Alert không chạy vòng xử lý;
+if (Có lỗi kỹ thuật trong kiểm tra / lưu / xử lý?) then (Có)
+  :ImportBatch = Failed; lưu lỗi và audit;\nKhông coi kết quả là xác minh hợp lệ;\nThông báo lỗi theo AD-16;
+  stop
+endif
+if (Có thành công và có ImportError?) then (Có)
+  :ImportBatch = Partially Completed;\nGiữ bản ghi hợp lệ và hiển thị lỗi;
+else (Không)
+  :ImportBatch = Completed;\nBao gồm báo cáo hợp lệ không có Alert;
+endif
+:ScanOccurrence = Result Imported;\nLưu liên kết Asset / ScanOccurrence / ImportBatch / RawReport;\nGhi audit và thông báo theo AD-16;
+|Nhóm vận hành quét|
+:Xem tổng số thành công, lỗi, Finding mới / trùng;
+stop
+legend bottom
+K-01: Mọi thao tác người dùng phải kiểm tra quyền hiện hành + phạm vi phía máy chủ.
+Không đạt K-01: từ chối, ghi audit, không thực hiện bước đọc / ghi kế tiếp.
+K-02: Mọi thay đổi, phê duyệt, từ chối, lỗi và truy cập nhạy cảm theo nguồn 8.5 đều ghi audit.
+Audit: người, thời điểm, đối tượng, hành động, kết quả; trước / sau và bằng chứng khi có.
+Các lời gọi AD-xx phải bảo toàn tiền điều kiện, mọi nhánh lỗi và trạng thái đầu ra của AD được gọi.
+endlegend
+@enduml

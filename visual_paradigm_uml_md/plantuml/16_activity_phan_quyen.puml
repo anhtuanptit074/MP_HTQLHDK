@@ -1,0 +1,54 @@
+@startuml
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam backgroundColor #FFFFFF
+skinparam ArrowColor #334155
+skinparam activityBackgroundColor #EFF6FF
+skinparam activityBorderColor #334155
+skinparam activityDiamondBackgroundColor #FFF7ED
+skinparam activityDiamondBorderColor #9A3412
+skinparam usecaseBackgroundColor #EFF6FF
+skinparam usecaseBorderColor #334155
+skinparam packageStyle rectangle
+skinparam maxMessageSize 70
+!pragma useVerticalIf on
+title AD-15 — Gán, thu hồi quyền và xem nhật ký quyền
+|Quản trị viên / Kiểm toán viên|
+start
+:Chọn thao tác quản lý quyền hoặc xem nhật ký quyền;
+|Hệ thống|
+if (Đã xác thực và được phép thực hiện thao tác?) then (Có)
+else (Không)
+  :Từ chối mặc định; audit;
+  stop
+endif
+if (Chỉ xem nhật ký quyền?) then (Có)
+  :Trả lịch sử thay đổi quyền theo phạm vi;\nChỉ đọc, không sửa nhật ký;
+  stop
+endif
+if (Có vai trò Admin được phép thay đổi quyền?) then (Có)
+else (Không)
+  :Từ chối; kiểm toán viên không sửa dữ liệu;
+  stop
+endif
+|Quản trị viên / Kiểm toán viên|
+:Admin chọn người dùng, vai trò, tài sản\nvà gán hoặc thu hồi quyền;
+|Hệ thống|
+:Kiểm tra phạm vi quyền hỗ trợ F-01 đến F-04;\nTách quyền RawReport khỏi quyền Finding đã che;
+:Lưu gán / thu hồi; AuditLog trước / sau,\nngười thực hiện, thời điểm, đối tượng, kết quả;
+:Áp dụng role + asset scope phía máy chủ\ncho màn hình, API nội bộ và tệp tải;\nKhông có quyền rõ ràng thì từ chối;
+note right
+Admin không mặc nhiên đọc nội dung lỗ hổng.
+Quyền phê duyệt không bỏ qua kiểm tra độc lập.
+API nội bộ kiểm tra quyền không phải API nhận báo cáo ZAP.
+end note
+stop
+legend bottom
+K-01: Mọi thao tác người dùng phải kiểm tra quyền hiện hành + phạm vi phía máy chủ.
+Không đạt K-01: từ chối, ghi audit, không thực hiện bước đọc / ghi kế tiếp.
+K-02: Mọi thay đổi, phê duyệt, từ chối, lỗi và truy cập nhạy cảm theo nguồn 8.5 đều ghi audit.
+Audit: người, thời điểm, đối tượng, hành động, kết quả; trước / sau và bằng chứng khi có.
+Các lời gọi AD-xx phải bảo toàn tiền điều kiện, mọi nhánh lỗi và trạng thái đầu ra của AD được gọi.
+endlegend
+@enduml

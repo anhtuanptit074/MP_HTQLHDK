@@ -1,0 +1,26 @@
+\set ON_ERROR_STOP on
+
+SELECT current_database() ~* '(^|_)(local|test|ci)$' AS safe_fixture_database \gset
+\if :safe_fixture_database
+    BEGIN;
+    SET LOCAL session_replication_role = replica;
+    DO $$
+    DECLARE
+        business_tables text;
+    BEGIN
+        SELECT string_agg(format('%I.%I', schemaname, tablename), ', ' ORDER BY tablename)
+        INTO business_tables
+        FROM pg_tables
+        WHERE schemaname = 'htqlhdk';
+
+        IF business_tables IS NOT NULL THEN
+            EXECUTE 'TRUNCATE TABLE ' || business_tables || ' RESTART IDENTITY CASCADE';
+        END IF;
+    END $$;
+    SET LOCAL session_replication_role = origin;
+    \ir ../../../database/validation/fixture.sql
+    COMMIT;
+\else
+    \echo 'ERROR: Test fixture is allowed only in databases ending with _local, _test or _ci.'
+    \quit 4
+\endif

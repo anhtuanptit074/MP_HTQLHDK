@@ -1,0 +1,43 @@
+sequenceDiagram
+    autonumber
+    actor Sec as Chuyên viên ATTT
+    actor Owner as Chủ tài sản
+    participant UI as Giao diện
+    participant Svc as Dịch vụ lịch quét
+    participant DB as CSDL HTQLHDK
+    Sec->>UI: Tạo, sửa, kích hoạt hoặc tạm dừng lịch
+    UI->>Svc: Gửi cấu hình và thao tác
+    Note over UI,DB: SD-00: kiểm ATTT trong tài sản； khóa và audit
+    alt Tạm dừng lịch Active
+    Svc->>DB: TX: scan_schedule Paused + audit
+    Svc-->>UI: Đã tạm dừng； giữ các lần quét
+    else Tạo hoặc sửa lịch
+    Svc->>DB: Đọc asset, scope Approved, rule và khung giờ
+    DB-->>Svc: Cấu hình có hiệu lực
+    Svc->>Svc: Kiểm URL, Exclude ưu tiên, múi giờ và chu kỳ
+    alt Dữ liệu hoặc phạm vi sai
+    Svc-->>UI: Trả lỗi； chưa áp dụng thay đổi
+    else Hợp lệ
+    Owner->>UI: Xác nhận thời gian của tài sản
+    UI->>Svc: Gửi xác nhận trên cấu hình đã xem
+    Note over UI,DB: SD-00: kiểm Owner và cấu hình chưa đổi
+    Svc->>DB: Tìm lịch trùng thời gian
+    DB-->>Svc: Danh sách xung đột nếu có
+    opt Có xung đột
+    Svc-->>UI: Cảnh báo để ATTT rà soát
+    end
+    Sec->>UI: Xác nhận lưu hoặc kích hoạt
+    UI->>Svc: Gửi thao tác cuối
+    Note over UI,DB: SD-00: kiểm lại quyền và dữ liệu hiện hành
+    alt Lưu Draft hoặc sửa lịch chưa Active
+    Svc->>DB: TX: lưu lịch, xác nhận thời gian và audit
+    else Kích hoạt, tiếp tục hoặc sửa lịch Active
+    alt Asset Active, scope đã duyệt và lịch đủ điều kiện
+    Svc->>DB: TX: lịch Active, approved_by/at, next_due_at + audit
+    else Không đủ điều kiện
+    Svc-->>UI: Không áp dụng； giữ cấu hình hiệu lực trước
+    end
+    end
+    end
+    end
+    Note over Svc,DB: Thay đổi asset/scope/tần suất có lịch sử； SD-04 tạo từng lần quét

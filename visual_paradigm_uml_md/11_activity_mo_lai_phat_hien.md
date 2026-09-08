@@ -1,0 +1,72 @@
+# AD-10 — Mở lại sau Closed hoặc hết điều kiện chấp nhận rủi ro
+
+**Nguồn:** mục 5.3.5; 7.2; 7.4 của tài liệu nguồn.
+
+**Điều kiện vào:** AD-12 báo fingerprint tái xuất hiện; hoặc đến hạn quyết định rủi ro; hoặc ATTT xác nhận vi phạm/rủi ro tăng.
+
+**Kết quả:** Reopened khi có trigger hợp lệ; nếu không thì giữ trạng thái. Mỗi sự kiện mới gọi lại Activity.
+
+**Truy vết UC:** UC-R11, UC-RA05, UC-RA06.
+
+```plantuml
+@startuml
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam backgroundColor #FFFFFF
+skinparam ArrowColor #334155
+skinparam activityBackgroundColor #EFF6FF
+skinparam activityBorderColor #334155
+skinparam activityDiamondBackgroundColor #FFF7ED
+skinparam activityDiamondBorderColor #9A3412
+skinparam usecaseBackgroundColor #EFF6FF
+skinparam usecaseBorderColor #334155
+skinparam packageStyle rectangle
+skinparam maxMessageSize 70
+!pragma useVerticalIf on
+title AD-10 — Mở lại sau Closed hoặc hết điều kiện chấp nhận rủi ro
+|Hệ thống / ATTT theo sự kiện|
+start
+:Nhận sự kiện báo cáo mới / đến hạn /\nATTT xác nhận vi phạm hoặc rủi ro tăng;
+|Hệ thống|
+if (Finding = Closed?) then (Có)
+  if (Fingerprint xuất hiện trong báo cáo ZAP mới\nđã nhập hợp lệ, đúng tài sản?) then (Có)
+    :Finding = Reopened; lưu báo cáo gây mở lại; audit;
+  else (Không)
+    :Giữ Closed; không có căn cứ mở lại;
+    stop
+  endif
+else (Không)
+  if (Finding = Risk Accepted?) then (Có)
+    if (ATTT đúng quyền xác nhận\nvi phạm điều kiện hoặc rủi ro tăng?) then (Có)
+      :Finding = Reopened; lưu lý do / bằng chứng; audit;
+    else (Không)
+      if (Quyết định đang áp dụng đã hết hạn?) then (Có)
+        if (Có quyết định gia hạn mới hợp lệ?) then (Có)
+          :Áp dụng quyết định mới; giữ Risk Accepted;\nĐánh giá lại khi có sự kiện tiếp theo;
+          stop
+        else (Không)
+          :Finding = Reopened; audit;\nTiếp tục khắc phục / xác minh theo AD-06;
+        endif
+      else (Không)
+        :Giữ Risk Accepted;\nKiểm tra lại khi đến hạn / sự kiện mới;
+        stop
+      endif
+    endif
+  else (Không)
+    :Không đổi trạng thái;\nĐã khắc phục và Closed không bị mở lại chỉ vì hạn rủi ro cũ;
+    stop
+  endif
+endif
+|Chuyên viên ATTT|
+:Tiếp nhận thông tin mở lại;\nAD-06 phân công lại với thời hạn mới;
+stop
+legend bottom
+K-01: Mọi thao tác người dùng phải kiểm tra quyền hiện hành + phạm vi phía máy chủ.
+Không đạt K-01: từ chối, ghi audit, không thực hiện bước đọc / ghi kế tiếp.
+K-02: Mọi thay đổi, phê duyệt, từ chối, lỗi và truy cập nhạy cảm theo nguồn 8.5 đều ghi audit.
+Audit: người, thời điểm, đối tượng, hành động, kết quả; trước / sau và bằng chứng khi có.
+Các lời gọi AD-xx phải bảo toàn tiền điều kiện, mọi nhánh lỗi và trạng thái đầu ra của AD được gọi.
+endlegend
+@enduml
+```

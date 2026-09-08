@@ -1,0 +1,61 @@
+@startuml
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam backgroundColor #FFFFFF
+skinparam ArrowColor #334155
+skinparam activityBackgroundColor #EFF6FF
+skinparam activityBorderColor #334155
+skinparam activityDiamondBackgroundColor #FFF7ED
+skinparam activityDiamondBorderColor #9A3412
+skinparam usecaseBackgroundColor #EFF6FF
+skinparam usecaseBorderColor #334155
+skinparam packageStyle rectangle
+skinparam maxMessageSize 70
+left to right direction
+title UC-00 — Use Case tổng quan
+actor "Quản trị viên" as Admin
+actor "Chuyên viên ATTT" as Security
+actor "Chủ sở hữu tài sản" as Owner
+actor "Nhóm vận hành quét" as Ops
+actor "Nhóm khắc phục kỹ thuật" as Fix
+actor "Người phê duyệt rủi ro" as Risk
+actor "Kiểm toán viên" as Auditor
+rectangle "Hệ thống quản lý quét lỗ hổng website định kỳ" {
+  usecase "F-01\nKhai báo và quản lý tài sản" as F01
+  usecase "F-02\nLập và theo dõi lịch quét" as F02
+  usecase "F-03\nNhập báo cáo OWASP ZAP" as F03
+  usecase "F-04\nPhân tích, khắc phục và xác minh" as F04
+  usecase "Hỗ trợ F-04\nChấp nhận rủi ro" as RA
+  usecase "Hỗ trợ F-01 đến F-04\nQuyền, báo cáo, nhật ký, thông báo" as CT
+}
+Owner -- F01 : khai báo / xác nhận
+Security -- F01 : tạo / duyệt
+Security -- F02 : lập / kích hoạt
+Owner -- F02 : xác nhận thời gian
+Ops -- F02 : theo dõi / cập nhật
+Ops -- F03 : tải tệp
+Security -- F03 : xem / phân tích
+Security -- F04 : phân tích / phân công / đóng
+Fix -- F04 : khắc phục / bằng chứng
+Ops -- F04 : cung cấp kết quả xác minh
+Owner -- F04 : ảnh hưởng / theo dõi
+Owner -- RA : đề nghị
+Security -- RA : đề nghị / khuyến nghị
+Risk -- RA : phê duyệt độc lập
+Admin -- CT : quyền / nhật ký quyền
+Auditor -- CT : chỉ đọc / xuất theo quyền
+Security -- CT
+Owner -- CT
+Ops -- CT
+Fix -- CT
+Risk -- CT
+legend bottom
+Đây là sơ đồ gom nhóm, các UC cụ thể nằm ở 6 sơ đồ chi tiết.
+ZAP do Ops chạy bên ngoài; hệ thống không điều khiển hoặc tự thực hiện quét.
+Quyền xem các dữ liệu F-01 đến F-04 của từng vai trò theo ma trận nguồn 3.3.
+Fix không tự đóng; Ops không quyết Final Severity; người đề nghị không tự duyệt rủi ro.
+Admin không mặc nhiên xem lỗ hổng. Kiểm toán chỉ đọc. RawReport cần quyền riêng.
+Hỗ trợ chỉ phục vụ bốn chức năng; không có SSO, BI, email hay tích hợp CI/CD độc lập.
+endlegend
+@enduml

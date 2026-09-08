@@ -1,0 +1,52 @@
+@startuml
+hide footbox
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 58
+skinparam BoxPadding 8
+skinparam ArrowColor #334155
+skinparam sequenceParticipantBackgroundColor #EAF2FB
+skinparam sequenceParticipantBorderColor #334155
+skinparam sequenceLifeLineBorderColor #94A3B8
+skinparam sequenceGroupBorderColor #64748B
+skinparam sequenceGroupHeaderFontColor #0F172A
+skinparam sequenceGroupBackgroundColor #F8FAFC
+skinparam sequenceReferenceBackgroundColor #EFF6FF
+skinparam sequenceReferenceBorderColor #93C5FD
+skinparam NoteBackgroundColor #FFF7E8
+skinparam NoteBorderColor #D9A441
+autonumber
+title SD-18 — Theo dõi thời hạn và thông báo nội bộ
+actor "Sự kiện thời gian" as Clock
+actor "Người dùng" as User
+boundary "Giao diện" as UI
+control "Dịch vụ hạn và thông báo" as Svc
+database "CSDL HTQLHDK" as DB
+alt Có sự kiện nghiệp vụ đã commit
+  Svc -> DB : Đọc sự kiện audit và bản ghi nghiệp vụ liên quan
+else Đến kỳ kiểm tra hạn
+  Clock -> Svc : Kiểm lịch, phiếu và quyết định rủi ro
+  Svc -> DB : Đọc hạn hiện hành và chính sách đơn vị
+end
+DB --> Svc : Sự kiện, đối tượng và hạn cần xử lý
+Svc -> Svc : Phân loại sự kiện và người có nhiệm vụ
+loop Mỗi người nhận còn quyền phù hợp
+  Svc -> DB : Kiểm quyền hiện hành; tìm recipient_id + dedupe_key
+  DB --> Svc : Quyền và thông báo đã có nếu có
+  alt Có quyền và chưa có thông báo
+    Svc -> DB : TX: notification tối thiểu; chống trùng bằng UNIQUE
+  else Hết quyền hoặc đã ghi
+    Svc -> Svc : Bỏ qua; không lộ dữ liệu và không tạo trùng
+  end
+end
+User -> UI : Xem thông báo hoặc phiếu sắp hạn/quá hạn
+UI -> Svc : Yêu cầu danh sách của mình
+ref over UI,DB : SD-00: đúng người nhận và phạm vi hiện hành
+Svc -> DB : SELECT dữ liệu đúng quyền, hạn hiện hành; đánh dấu đã đọc nếu cần
+DB --> Svc : Danh sách tối thiểu đã lọc
+Svc --> UI : Mã tài sản/phát hiện, trạng thái, hạn và liên kết nội bộ
+note over Svc,DB : Lỗi thông báo: đối soát từ nguồn đã commit, ghi lại theo dedupe_key
+@enduml

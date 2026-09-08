@@ -1,0 +1,62 @@
+sequenceDiagram
+    autonumber
+    actor User as Người dùng
+    actor Receiver as Người nhận báo cáo
+    participant UI as Giao diện
+    participant Svc as Dịch vụ báo cáo
+    participant Auth as Kiểm soát quyền
+    participant Store as Kho tệp riêng
+    participant DB as CSDL HTQLHDK
+    User->>UI: Chọn báo cáo, tài sản, người nhận và hạn tải
+    UI->>Svc: Yêu cầu xuất báo cáo
+    Svc->>Auth: Kiểm quyền người xuất và người nhận trên toàn bộ nội dung
+    Auth-->>Svc: Quyền và giới hạn nội dung hiện hành
+    alt Không đủ quyền
+    Svc->>DB: Audit từ chối xuất
+    Svc-->>UI: Không tạo báo cáo
+    else Đủ quyền
+    Svc->>DB: Đọc snapshot dữ liệu theo quyền đã xác định
+    DB-->>Svc: Dữ liệu trong phạm vi
+    Svc->>Svc: Che theo người nhận； gắn nhãn, người/thời điểm, trace_code
+    Svc->>Store: Lưu tệp xuất riêng, mã hóa và checksum
+    Store-->>Svc: object_key, sha256, key_ref
+    Svc->>Svc: Sinh token ngẫu nhiên và token_hash
+    Svc->>Auth: Kiểm lại quyền trước phát hành
+    Auth-->>Svc: Quyền còn hiệu lực hoặc từ chối
+    alt Quyền còn hiệu lực
+    Svc->>DB: TX: report_export + report_export_asset + audit； COMMIT
+    Svc-->>UI: Liên kết có hạn； token thật không lưu trong DB/log
+    else Đã mất quyền
+    Svc->>DB: Audit từ chối； không phát hành metadata/link
+    Svc-->>UI: Không phát hành； đối soát tệp chưa liên kết
+    end
+    end
+    Receiver->>UI: Mở liên kết và yêu cầu tải
+    UI->>Svc: export_id, token và phiên người nhận
+    Svc->>DB: Đọc metadata bản xuất； danh sách tài sản
+    DB-->>Svc: recipient, token_hash, hạn, thu hồi và asset IDs
+    Svc->>Auth: Kiểm phiên, đúng người nhận và quyền trên mọi nội dung
+    Auth-->>Svc: Quyết định quyền hiện hành
+    Svc->>Svc: Kiểm token, expires_at và revoked_at
+    alt Bất kỳ kiểm tra nào không đạt
+    Svc->>DB: Audit từ chối tải
+    Svc-->>UI: Không phát hành tệp
+    else Đạt điều kiện tải
+    Svc->>Store: Đọc tệp qua object_key nội bộ
+    Store-->>Svc: Byte tệp
+    Svc->>Svc: Kiểm toàn vẹn； kiểm lại hết hạn/thu hồi/quyền trước phát hành
+    alt Tất cả điều kiện vẫn đạt
+    Svc->>DB: Audit tải bắt buộc
+    Svc-->>UI: Stream tệp qua máy chủ sau audit thành công
+    else Điều kiện thay đổi hoặc tệp lỗi
+    Svc->>DB: Audit lỗi/từ chối
+    Svc-->>UI: Không trả tệp
+    end
+    end
+    opt Người có quyền yêu cầu thu hồi
+    User->>UI: Thu hồi liên kết và nhập lý do
+    UI->>Svc: export_id và lý do
+    Note over UI,DB: SD-00: kiểm report.revoke trên mọi tài sản liên quan
+    Svc->>DB: TX: revoked_by/at + audit； giữ bản xuất và lịch sử
+    Svc-->>UI: Liên kết đã bị thu hồi
+    end

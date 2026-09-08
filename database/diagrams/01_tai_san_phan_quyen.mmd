@@ -1,0 +1,55 @@
+erDiagram
+    app_user {
+        bigint id PK
+    }
+    team {
+        bigint id PK
+        varchar code
+    }
+    team_member {
+        bigint id PK
+        bigint team_id FK
+        bigint user_id FK
+    }
+    user_role {
+        bigint id PK
+        bigint user_id FK
+        user_role_code role_code
+        bigint asset_id FK
+    }
+    asset {
+        bigint id PK, FK
+        varchar code
+        bigint owner_id FK
+        bigint technical_team_id FK
+        bigint security_officer_id FK
+        asset_status status
+        bigint current_scope_id FK
+    }
+    asset_scope_revision {
+        bigint id PK
+        bigint asset_id FK
+        integer version_no
+        text status
+    }
+    asset_scope_rule {
+        bigint id PK
+        bigint scope_id FK
+        text effect
+        text target_value
+    }
+    asset_scan_window {
+        bigint id PK
+        bigint scope_id FK
+    }
+    team ||--o{ team_member : "team_id"
+    app_user ||--o{ team_member : "user_id"
+    app_user ||--o{ user_role : "user_id"
+    asset |o--o{ user_role : "asset_id"
+    app_user |o--o{ asset : "owner_id"
+    team |o--o{ asset : "technical_team_id"
+    app_user |o--o{ asset : "security_officer_id"
+    asset_scope_revision |o--o| asset : "current_scope_id"
+    asset ||--o{ asset_scope_revision : "asset_id"
+    asset_scope_revision ||--o{ asset_scope_rule : "scope_id"
+    asset_scope_revision ||--o{ asset_scan_window : "scope_id"

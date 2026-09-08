@@ -1,0 +1,55 @@
+# UC-05 — Chấp nhận rủi ro, hỗ trợ F-04
+
+Các mã UC và quyền được định nghĩa thống nhất trong tài liệu đặc tả. Association là tham gia; quyền quyết định theo vai trò và phạm vi, không suy ra từ chiều mũi tên.
+
+```plantuml
+@startuml
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam backgroundColor #FFFFFF
+skinparam ArrowColor #334155
+skinparam activityBackgroundColor #EFF6FF
+skinparam activityBorderColor #334155
+skinparam activityDiamondBackgroundColor #FFF7ED
+skinparam activityDiamondBorderColor #9A3412
+skinparam usecaseBackgroundColor #EFF6FF
+skinparam usecaseBorderColor #334155
+skinparam packageStyle rectangle
+skinparam maxMessageSize 70
+left to right direction
+title UC-05 — Chấp nhận rủi ro, hỗ trợ F-04
+actor "Chuyên viên ATTT" as Security
+actor "Chủ sở hữu tài sản" as Owner
+actor "Nhóm khắc phục kỹ thuật" as Fix
+actor "Người phê duyệt rủi ro" as Risk
+rectangle "Hệ thống quản lý quét lỗ hổng website định kỳ" {
+  usecase "UC-RA01\nTạo đề nghị chấp nhận rủi\nro" as UC_RA01
+  usecase "UC-RA02\nRà soát đề nghị" as UC_RA02
+  usecase "UC-RA03\nPhê duyệt chấp nhận rủi ro" as UC_RA03
+  usecase "UC-RA04\nTừ chối hoặc yêu cầu bổ\nsung" as UC_RA04
+  usecase "UC-RA05\nTheo dõi ngày hết hạn" as UC_RA05
+  usecase "UC-RA06\nMở lại khi hết điều kiện\nrủi ro" as UC_RA06
+  usecase "UC-RA07\nGia hạn chấp nhận rủi ro" as UC_RA07
+}
+Owner --- UC_RA01
+Security --- UC_RA01
+UC_RA02 --- Risk
+UC_RA03 --- Risk
+UC_RA04 --- Risk
+Security --- UC_RA05
+Owner --- UC_RA05
+Security --- UC_RA06
+Owner --- UC_RA07
+Security --- UC_RA07
+Security --- UC_RA02 : khuyến nghị
+UC_RA01 --- Fix : cung cấp đề xuất
+UC_RA07 --- Risk : quyết định gia hạn
+legend bottom
+Nguồn 3.3, 7.2, 7.4. Chỉ Owner / ATTT gửi đề nghị chính thức.
+Fix cung cấp đề xuất, không tự chuyển Pending Risk Acceptance.
+RA01 độc lập với triage, tiền điều kiện Triaged / Assigned / In Progress.
+Phê duyệt độc lập, đúng thẩm quyền, có điều kiện / hạn. Gia hạn là quyết định mới.
+endlegend
+@enduml
+```

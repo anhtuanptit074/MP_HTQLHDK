@@ -1,0 +1,31 @@
+sequenceDiagram
+    autonumber
+    actor Clock as Sự kiện thời gian
+    actor User as Người dùng
+    participant UI as Giao diện
+    participant Svc as Dịch vụ hạn và thông báo
+    participant DB as CSDL HTQLHDK
+    alt Có sự kiện nghiệp vụ đã commit
+    Svc->>DB: Đọc sự kiện audit và bản ghi nghiệp vụ liên quan
+    else Đến kỳ kiểm tra hạn
+    Clock->>Svc: Kiểm lịch, phiếu và quyết định rủi ro
+    Svc->>DB: Đọc hạn hiện hành và chính sách đơn vị
+    end
+    DB-->>Svc: Sự kiện, đối tượng và hạn cần xử lý
+    Svc->>Svc: Phân loại sự kiện và người có nhiệm vụ
+    loop Mỗi người nhận còn quyền phù hợp
+    Svc->>DB: Kiểm quyền hiện hành； tìm recipient_id + dedupe_key
+    DB-->>Svc: Quyền và thông báo đã có nếu có
+    alt Có quyền và chưa có thông báo
+    Svc->>DB: TX: notification tối thiểu； chống trùng bằng UNIQUE
+    else Hết quyền hoặc đã ghi
+    Svc->>Svc: Bỏ qua； không lộ dữ liệu và không tạo trùng
+    end
+    end
+    User->>UI: Xem thông báo hoặc phiếu sắp hạn/quá hạn
+    UI->>Svc: Yêu cầu danh sách của mình
+    Note over UI,DB: SD-00: đúng người nhận và phạm vi hiện hành
+    Svc->>DB: SELECT dữ liệu đúng quyền, hạn hiện hành； đánh dấu đã đọc nếu cần
+    DB-->>Svc: Danh sách tối thiểu đã lọc
+    Svc-->>UI: Mã tài sản/phát hiện, trạng thái, hạn và liên kết nội bộ
+    Note over Svc,DB: Lỗi thông báo: đối soát từ nguồn đã commit, ghi lại theo dedupe_key

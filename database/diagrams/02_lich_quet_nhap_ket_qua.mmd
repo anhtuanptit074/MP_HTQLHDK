@@ -1,0 +1,87 @@
+erDiagram
+    asset {
+        bigint id PK, FK
+        varchar code
+        bigint owner_id FK
+        bigint technical_team_id FK
+        bigint security_officer_id FK
+        asset_status status
+        bigint current_scope_id FK
+    }
+    asset_scope_revision {
+        bigint id PK
+        bigint asset_id FK
+        integer version_no
+        text status
+    }
+    scan_schedule {
+        bigint id PK
+        varchar code
+        bigint asset_id FK
+        bigint scope_id FK
+        bigint operations_team_id FK
+        schedule_status status
+        text_array target_urls
+    }
+    scan_occurrence {
+        bigint id PK
+        varchar code
+        bigint asset_id FK
+        bigint scope_id FK
+        bigint schedule_id FK
+        bigint operations_team_id FK
+        scan_status status
+        text_array target_urls
+    }
+    import_batch {
+        bigint id PK
+        varchar code
+        bigint asset_id FK
+        bigint scan_id FK
+        varchar file_sha256
+        import_status status
+        text raw_object_key
+    }
+    import_error {
+        bigint id PK
+        bigint batch_id FK
+    }
+    finding {
+        bigint id PK, FK
+        varchar code
+        bigint asset_id FK
+        varchar fingerprint
+        finding_status status
+        bigint current_review_id FK
+        bigint verification_result_id FK
+    }
+    finding_occurrence {
+        bigint id PK
+        bigint asset_id FK
+        bigint finding_id FK
+        bigint scan_id FK
+    }
+    finding_observation {
+        bigint id PK
+        bigint asset_id FK
+        bigint scan_id FK
+        bigint occurrence_id FK
+        bigint batch_id FK
+        source_severity source_severity
+        smallint source_confidence
+    }
+    asset_scope_revision |o--o| asset : "current_scope_id"
+    asset ||--o{ asset_scope_revision : "asset_id"
+    asset ||--o{ scan_schedule : "asset_id"
+    asset_scope_revision ||--o{ scan_schedule : "scope_id"
+    asset ||--o{ scan_occurrence : "asset_id"
+    asset_scope_revision ||--o{ scan_occurrence : "scope_id"
+    scan_schedule |o--o{ scan_occurrence : "schedule_id"
+    asset ||--o{ import_batch : "asset_id"
+    scan_occurrence ||--o{ import_batch : "scan_id"
+    import_batch ||--o{ import_error : "batch_id"
+    asset ||--o{ finding : "asset_id"
+    finding ||--o{ finding_occurrence : "finding_id"
+    scan_occurrence ||--o{ finding_occurrence : "scan_id"
+    finding_occurrence ||--o{ finding_observation : "occurrence_id"
+    import_batch ||--o{ finding_observation : "batch_id"

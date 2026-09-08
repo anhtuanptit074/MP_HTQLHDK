@@ -1,0 +1,31 @@
+sequenceDiagram
+    autonumber
+    actor Fix as Người khắc phục
+    actor Sec as Chuyên viên ATTT
+    participant UI as Giao diện
+    participant Svc as Dịch vụ khắc phục và xác minh
+    participant Store as Kho tệp riêng
+    participant DB as CSDL HTQLHDK
+    Fix->>UI: Cập nhật tiến độ, nguyên nhân, biện pháp và bằng chứng
+    UI->>Svc: Gửi bản cập nhật phiếu
+    Note over UI,DB: SD-00: chỉ phiếu được giao； kiểm In Progress
+    Svc->>Store: Lưu bằng chứng trong kho riêng, mã hóa và checksum
+    Store-->>Svc: object_key, sha256, key_ref
+    Svc->>DB: TX: evidence + ticket_event Progress snapshot + con trỏ + audit
+    Svc-->>UI: Đã lưu bản sửa và tiến độ
+    Fix->>UI: Đề nghị chuyển chờ xác minh
+    UI->>Svc: ticket_id và current_event_id
+    Note over UI,DB: SD-00: khóa Finding/phiếu； đọc bản sửa hiện hành
+    alt Thiếu biện pháp, bằng chứng hoặc bản sửa rõ ràng
+    Svc-->>UI: Giữ In Progress； liệt kê nội dung cần bổ sung
+    else Đủ điều kiện
+    Svc->>DB: TX: In Progress thành Pending Verification + audit/bằng chứng
+    Svc-->>UI: Đã chuyển chờ xác minh
+    Sec->>UI: Tạo yêu cầu quét xác minh
+    UI->>Svc: Finding, phiếu, scope, nhóm vận hành, remediation_event_id
+    Note over UI,DB: SD-00: ATTT； đúng bản sửa/chu kỳ hiện hành
+    Svc->>DB: TX: verification_request Requested + audit
+    Note over Svc,DB: SD-18: thông báo yêu cầu xác minh sau commit
+    Svc-->>UI: Mã yêu cầu xác minh
+    end
+    Note over Svc,DB: verification_request trỏ bản Progress； không tự kết luận Closed

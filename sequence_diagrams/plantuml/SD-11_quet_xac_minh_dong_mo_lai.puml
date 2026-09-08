@@ -1,0 +1,64 @@
+@startuml
+hide footbox
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 58
+skinparam BoxPadding 8
+skinparam ArrowColor #334155
+skinparam sequenceParticipantBackgroundColor #EAF2FB
+skinparam sequenceParticipantBorderColor #334155
+skinparam sequenceLifeLineBorderColor #94A3B8
+skinparam sequenceGroupBorderColor #64748B
+skinparam sequenceGroupHeaderFontColor #0F172A
+skinparam sequenceGroupBackgroundColor #F8FAFC
+skinparam sequenceReferenceBackgroundColor #EFF6FF
+skinparam sequenceReferenceBorderColor #93C5FD
+skinparam NoteBackgroundColor #FFF7E8
+skinparam NoteBorderColor #D9A441
+autonumber
+title SD-11 — Quét xác minh, đóng hoặc mở lại phát hiện
+actor "Nhóm vận hành quét" as Ops
+actor "Chuyên viên ATTT" as Sec
+boundary "Giao diện" as UI
+control "Dịch vụ xác minh" as Svc
+database "CSDL HTQLHDK" as DB
+participant "OWASP ZAP bên ngoài" as ZAP
+Ops -> UI : Xem yêu cầu xác minh được giao
+UI -> Svc : Lấy request, mục tiêu và bản sửa
+ref over UI,DB : SD-00: Ops; đúng tài sản và yêu cầu
+Svc --> UI : Kế hoạch xác minh
+Svc -> DB : TX: scan_occurrence purpose Verification, snapshot mục tiêu + audit
+Ops -> ZAP : Quét mới sau bản sửa bên ngoài hệ thống
+ZAP --> Ops : Báo cáo Traditional JSON/XML
+ref over Ops,DB : SD-04 phần ghi thực hiện; SD-05 nhập báo cáo mới
+Sec -> UI : Chọn báo cáo và đánh giá xác minh
+UI -> Svc : Yêu cầu chuẩn bị đánh giá request, scan, batch và độ bao phủ
+ref over UI,DB : SD-00: ATTT; không phải người thực sự khắc phục
+Svc -> DB : Đọc bản sửa, chu kỳ, lần quét, lô nhập và nguồn phát hiện
+DB --> Svc : Bản sửa, lần quét, lô nhập, Observation và trạng thái
+Svc -> Svc : Kiểm scan sau remediated_at, asset, mục tiêu, bao phủ, giá trị lô
+alt Thiếu dữ liệu đánh giá hoặc kết quả thuộc chu kỳ cũ
+  Svc -> DB : Audit yêu cầu không đủ điều kiện
+  Svc --> UI : Yêu cầu dữ liệu phù hợp; chưa áp dụng kết luận
+else Có kết quả để đánh giá đúng chu kỳ
+  Svc -> DB : Đối chiếu fingerprint với nguồn quét xác minh
+  DB --> Svc : Có/không fingerprint; lỗi nhập liên quan
+  Svc --> UI : Hiển thị kết quả đối chiếu và phiên bản căn cứ
+  alt Báo cáo hợp lệ, bao phủ đủ và không còn fingerprint
+    Sec -> UI : Xác nhận kết luận đóng
+    UI -> Svc : Gửi Closed, lý do và phiên bản căn cứ
+    ref over UI,DB : SD-00: khóa và kiểm lại quyền, chu kỳ, bản sửa, lô và fingerprint
+    Svc -> DB : TX: Result Closed + Finding/result_id + request Evaluated + audit; COMMIT
+    Svc --> UI : Kết luận Closed và lịch sử xác minh
+  else Còn fingerprint hoặc báo cáo không hợp lệ
+    Sec -> UI : Xác nhận mở lại và lý do
+    UI -> Svc : Gửi Reopened, lý do và phiên bản căn cứ
+    ref over UI,DB : SD-00: khóa và kiểm lại quyền, chu kỳ, bản sửa và nguồn kết quả
+    Svc -> DB : TX: Result Reopened + Finding/result_id + request Evaluated + audit; COMMIT
+    Svc --> UI : Kết luận Reopened và lịch sử xác minh
+  end
+end
+@enduml

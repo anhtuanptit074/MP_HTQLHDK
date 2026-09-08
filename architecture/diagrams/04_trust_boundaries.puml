@@ -1,0 +1,51 @@
+@startuml
+title HTQLHDK - Trust boundaries and protected flows
+left to right direction
+skinparam shadowing false
+skinparam componentStyle rectangle
+
+rectangle "TB-01 Client" {
+  actor Browser
+}
+rectangle "TB-02 Edge" {
+  component "Proxy / WAF" as Edge
+}
+rectangle "TB-03 Application" {
+  component "Web/API" as API
+  component "Worker" as Worker
+}
+rectangle "TB-04 Data" {
+  database "PostgreSQL" as DB
+  storage "Object storage" as OBJ
+}
+rectangle "TB-05 Security services" {
+  component "IdP" as IDP
+  component "KMS / Secrets" as KMS
+}
+rectangle "TB-06 Observability" {
+  component "Telemetry" as TEL
+}
+rectangle "TB-07 Backup" {
+  storage "Backup target" as BAK
+}
+
+Browser --> Edge : token/cookie, upload/download
+Edge --> API : sanitized proxy request
+API --> DB : business + audit transaction
+Worker --> DB : durable jobs + results
+API --> OBJ : staging/download
+Worker --> OBJ : finalize/parse/export
+API --> IDP : OIDC
+API --> KMS : secret/key op
+Worker --> KMS : key op
+API --> TEL : allowlisted fields only
+Worker --> TEL : allowlisted fields only
+DB --> BAK : encrypted DB backup
+OBJ --> BAK : encrypted object versions
+
+note bottom of OBJ
+Raw/evidence/export never public.
+Generated keys; deny overwrite/delete.
+end note
+@enduml
+

@@ -1,0 +1,44 @@
+@startuml
+title HTQLHDK - Containers and logical modules
+top to bottom direction
+skinparam shadowing false
+skinparam componentStyle rectangle
+
+actor Browser
+component "Web UI\nReact + TypeScript" as UI
+component "Backend API\nASP.NET Core .NET 10" as API {
+  [Identity & Authorization] as AUTH
+  [Asset F-01] as A
+  [Scheduling F-02] as S
+  [Import F-03] as I
+  [Finding & Review] as F
+  [Remediation & Risk F-04] as R
+  [File / Export / Masking] as X
+  [Audit Writer] as AU
+}
+component "Worker\nsame release, separate identity" as W
+database "PostgreSQL 17\n27 business tables" as DB
+storage "Private object storage\nstaging/raw/evidence/exports" as OBJ
+component "IdP OIDC" as IDP
+component "KMS / Secrets" as KMS
+component "OpenTelemetry collector" as OTEL
+
+Browser --> UI : HTTPS
+UI --> API : REST / upload stream
+API --> IDP : OIDC
+API --> DB : api_runtime / audit_writer
+API --> OBJ : stream download / create staging
+API --> KMS : key + secret references
+W --> DB : worker_runtime / audit_writer
+W --> OBJ : parse/finalize/export/reconcile
+W --> KMS : crypto operation
+API --> OTEL : safe telemetry
+W --> OTEL : safe telemetry
+
+note right of W
+Khong dung in-memory queue.
+Claim durable state tu PostgreSQL,
+idempotent va bounded retry.
+end note
+@enduml
+

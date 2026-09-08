@@ -1,0 +1,43 @@
+sequenceDiagram
+    autonumber
+    actor Ops as Nhóm vận hành quét
+    actor Sec as Chuyên viên ATTT
+    participant UI as Giao diện
+    participant Svc as Dịch vụ xác minh
+    participant DB as CSDL HTQLHDK
+    participant ZAP as OWASP ZAP bên ngoài
+    Ops->>UI: Xem yêu cầu xác minh được giao
+    UI->>Svc: Lấy request, mục tiêu và bản sửa
+    Note over UI,DB: SD-00: Ops； đúng tài sản và yêu cầu
+    Svc-->>UI: Kế hoạch xác minh
+    Svc->>DB: TX: scan_occurrence purpose Verification, snapshot mục tiêu + audit
+    Ops->>ZAP: Quét mới sau bản sửa bên ngoài hệ thống
+    ZAP-->>Ops: Báo cáo Traditional JSON/XML
+    Note over Ops,DB: SD-04 phần ghi thực hiện； SD-05 nhập báo cáo mới
+    Sec->>UI: Chọn báo cáo và đánh giá xác minh
+    UI->>Svc: Yêu cầu chuẩn bị đánh giá request, scan, batch và độ bao phủ
+    Note over UI,DB: SD-00: ATTT； không phải người thực sự khắc phục
+    Svc->>DB: Đọc bản sửa, chu kỳ, lần quét, lô nhập và nguồn phát hiện
+    DB-->>Svc: Bản sửa, lần quét, lô nhập, Observation và trạng thái
+    Svc->>Svc: Kiểm scan sau remediated_at, asset, mục tiêu, bao phủ, giá trị lô
+    alt Thiếu dữ liệu đánh giá hoặc kết quả thuộc chu kỳ cũ
+    Svc->>DB: Audit yêu cầu không đủ điều kiện
+    Svc-->>UI: Yêu cầu dữ liệu phù hợp； chưa áp dụng kết luận
+    else Có kết quả để đánh giá đúng chu kỳ
+    Svc->>DB: Đối chiếu fingerprint với nguồn quét xác minh
+    DB-->>Svc: Có/không fingerprint； lỗi nhập liên quan
+    Svc-->>UI: Hiển thị kết quả đối chiếu và phiên bản căn cứ
+    alt Báo cáo hợp lệ, bao phủ đủ và không còn fingerprint
+    Sec->>UI: Xác nhận kết luận đóng
+    UI->>Svc: Gửi Closed, lý do và phiên bản căn cứ
+    Note over UI,DB: SD-00: khóa và kiểm lại quyền, chu kỳ, bản sửa, lô và fingerprint
+    Svc->>DB: TX: Result Closed + Finding/result_id + request Evaluated + audit； COMMIT
+    Svc-->>UI: Kết luận Closed và lịch sử xác minh
+    else Còn fingerprint hoặc báo cáo không hợp lệ
+    Sec->>UI: Xác nhận mở lại và lý do
+    UI->>Svc: Gửi Reopened, lý do và phiên bản căn cứ
+    Note over UI,DB: SD-00: khóa và kiểm lại quyền, chu kỳ, bản sửa và nguồn kết quả
+    Svc->>DB: TX: Result Reopened + Finding/result_id + request Evaluated + audit； COMMIT
+    Svc-->>UI: Kết luận Reopened và lịch sử xác minh
+    end
+    end

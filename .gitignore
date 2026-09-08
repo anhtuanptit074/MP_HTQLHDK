@@ -1,0 +1,36 @@
+# Local configuration and secrets
+.env
+.env.*
+!.env.local.example
+**/appsettings.*.Local.json
+secrets/
+*.pfx
+*.p12
+*.pem
+*.key
+
+# .NET
+**/bin/
+**/obj/
+**/TestResults/
+*.user
+
+# Node
+**/node_modules/
+**/dist/
+**/coverage/
+*.tsbuildinfo
+
+# Tooling and operating system
+.vs/
+.vscode/settings.json
+.idea/
+.DS_Store
+Thumbs.db
+.codex_tmp/
+.docx_review/
+
+# Runtime data
+local-data/
+*.log
+

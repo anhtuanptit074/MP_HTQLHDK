@@ -1,0 +1,62 @@
+@startuml
+hide footbox
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 58
+skinparam BoxPadding 8
+skinparam ArrowColor #334155
+skinparam sequenceParticipantBackgroundColor #EAF2FB
+skinparam sequenceParticipantBorderColor #334155
+skinparam sequenceLifeLineBorderColor #94A3B8
+skinparam sequenceGroupBorderColor #64748B
+skinparam sequenceGroupHeaderFontColor #0F172A
+skinparam sequenceGroupBackgroundColor #F8FAFC
+skinparam sequenceReferenceBackgroundColor #EFF6FF
+skinparam sequenceReferenceBorderColor #93C5FD
+skinparam NoteBackgroundColor #FFF7E8
+skinparam NoteBorderColor #D9A441
+autonumber
+title SD-12 — Đề nghị và phê duyệt chấp nhận rủi ro
+actor "Chủ tài sản" as Owner
+actor "Chuyên viên ATTT" as Sec
+actor "Người duyệt rủi ro" as Approver
+boundary "Giao diện" as UI
+control "Dịch vụ chấp nhận rủi ro" as Svc
+database "CSDL HTQLHDK" as DB
+Owner -> UI : Tạo đề nghị chấp nhận rủi ro
+UI -> Svc : Finding, lý do, tác động, giảm thiểu, trách nhiệm, hạn
+ref over UI,DB : SD-00: Owner/ATTT; đúng trạng thái nguồn và đủ thông tin
+Svc -> DB : TX: risk_acceptance Pending, previous_finding_status
+Svc -> DB : Cùng TX: Finding Pending Risk Acceptance + audit; COMMIT
+Sec -> UI : Bổ sung khuyến nghị ATTT
+UI -> Svc : Khuyến nghị trên hồ sơ
+ref over UI,DB : SD-00: ATTT; hồ sơ đang chờ; lưu cập nhật + audit
+loop Khi người duyệt yêu cầu bổ sung
+  Approver -> UI : Yêu cầu thông tin bổ sung
+  UI -> Svc : Nội dung yêu cầu
+  ref over UI,DB : SD-00: kiểm quyền duyệt và hồ sơ hiện hành
+  Svc -> DB : TX: Needs Information + audit trước/sau
+  Owner -> UI : Bổ sung và gửi lại
+  UI -> Svc : Thông tin đã bổ sung
+  ref over UI,DB : SD-00: kiểm người đề nghị có quyền
+  Svc -> DB : TX: Pending + thông tin mới + audit trước/sau
+end
+Approver -> UI : Phê duyệt hoặc từ chối
+UI -> Svc : Quyết định, thẩm quyền, lý do, điều kiện và hạn
+ref over UI,DB : SD-00: độc lập; khóa Finding/hồ sơ; kiểm trạng thái hiện hành
+alt Tự duyệt, sai thẩm quyền hoặc hồ sơ không còn phù hợp
+  Svc --> UI : Từ chối áp dụng; không đổi Finding
+else Quyết định hợp lệ
+  alt Chấp thuận với điều kiện và hạn hợp lệ
+    Svc -> DB : TX: Approved, quyết định, valid_from/until, applied_at
+    Svc -> DB : Cùng TX: Finding Risk Accepted + audit; COMMIT
+  else Từ chối hoặc yêu cầu tiếp tục khắc phục
+    Svc -> DB : TX: Rejected + quyết định
+    Svc -> DB : Cùng TX: khôi phục đúng previous_finding_status + audit; COMMIT
+  end
+  Svc --> UI : Kết quả và thời hạn có hiệu lực
+end
+@enduml

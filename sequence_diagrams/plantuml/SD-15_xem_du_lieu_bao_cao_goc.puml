@@ -1,0 +1,70 @@
+@startuml
+hide footbox
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 58
+skinparam BoxPadding 8
+skinparam ArrowColor #334155
+skinparam sequenceParticipantBackgroundColor #EAF2FB
+skinparam sequenceParticipantBorderColor #334155
+skinparam sequenceLifeLineBorderColor #94A3B8
+skinparam sequenceGroupBorderColor #64748B
+skinparam sequenceGroupHeaderFontColor #0F172A
+skinparam sequenceGroupBackgroundColor #F8FAFC
+skinparam sequenceReferenceBackgroundColor #EFF6FF
+skinparam sequenceReferenceBorderColor #93C5FD
+skinparam NoteBackgroundColor #FFF7E8
+skinparam NoteBorderColor #D9A441
+autonumber
+title SD-15 — Xem dữ liệu, lịch sử và báo cáo gốc
+actor "Người dùng" as User
+boundary "Giao diện" as UI
+control "Dịch vụ tra cứu và báo cáo" as Svc
+control "Kiểm soát quyền" as Auth
+collections "Kho tệp riêng" as Store
+database "CSDL HTQLHDK" as DB
+User -> UI : Yêu cầu xem dữ liệu, lịch sử hoặc bản gốc
+UI -> Svc : Gửi bộ lọc hoặc ID đối tượng
+Svc -> Auth : Kiểm quyền hành động và phạm vi hiện hành
+Auth -> DB : Đọc user_role, tài sản, chủ sở hữu/phiếu được giao
+DB --> Auth : Căn cứ phân quyền
+Auth --> Svc : Quyết định và bộ lọc quyền
+alt Không có quyền
+  Svc -> DB : Audit từ chối đã che
+  Svc --> UI : Từ chối; không tiết lộ dữ liệu
+else Có quyền hành động
+  alt Dữ liệu thông thường hoặc lịch sử
+    Svc -> DB : Truy vấn dữ liệu và tổng số trong cùng phạm vi quyền
+    DB --> Svc : Dữ liệu đã lọc; không trả raw_object_key công khai
+    Svc -> Svc : Che bí mật và escape nội dung trước hiển thị
+    Svc -> DB : Audit đọc theo loại nội dung
+    Svc --> UI : Dữ liệu đã che và lịch sử theo quyền
+  else Báo cáo gốc hoặc evidence nhạy cảm
+    Svc -> Auth : Kiểm riêng cờ raw/evidence đúng tài sản
+    Auth --> Svc : Cho phép hoặc từ chối
+    alt Được quyền nhạy cảm tương ứng
+      Svc -> DB : Đọc metadata tệp trong phạm vi
+      DB --> Svc : object_key, sha256, key_ref
+      Svc -> Store : Đọc/giải mã tệp phía máy chủ
+      Store --> Svc : Byte tệp và thông tin toàn vẹn
+      Svc -> Svc : Xác minh checksum trước khi phát hành
+      Svc -> Auth : Kiểm lại quyền hiện hành tại thời điểm phát hành
+      Auth --> Svc : Quyết định hiện hành
+      alt Toàn vẹn đúng và quyền còn hiệu lực
+        Svc -> DB : Ghi audit truy cập nhạy cảm bắt buộc
+        Svc --> UI : Trả tệp qua máy chủ sau khi audit thành công
+      else Tệp lỗi hoặc mất quyền
+        Svc -> DB : Audit lỗi/từ chối; không chứa byte tệp
+        Svc --> UI : Không phát hành nội dung
+      end
+    else Không có quyền nhạy cảm
+      Svc -> DB : Audit từ chối
+      Svc --> UI : Không có quyền nội dung này
+    end
+  end
+end
+note over Svc,Store : RawReport nguyên bản; masking chỉ áp dụng bản hiển thị/xuất
+@enduml

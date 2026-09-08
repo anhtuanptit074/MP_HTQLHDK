@@ -1,0 +1,68 @@
+@startuml
+hide footbox
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 58
+skinparam BoxPadding 8
+skinparam ArrowColor #334155
+skinparam sequenceParticipantBackgroundColor #EAF2FB
+skinparam sequenceParticipantBorderColor #334155
+skinparam sequenceLifeLineBorderColor #94A3B8
+skinparam sequenceGroupBorderColor #64748B
+skinparam sequenceGroupHeaderFontColor #0F172A
+skinparam sequenceGroupBackgroundColor #F8FAFC
+skinparam sequenceReferenceBackgroundColor #EFF6FF
+skinparam sequenceReferenceBorderColor #93C5FD
+skinparam NoteBackgroundColor #FFF7E8
+skinparam NoteBorderColor #D9A441
+autonumber
+title SD-05 — Nhập và kiểm tra báo cáo OWASP ZAP
+actor "Nhóm vận hành quét" as Ops
+boundary "Giao diện" as UI
+control "Dịch vụ nhập báo cáo" as Svc
+control "Bộ đọc báo cáo ZAP" as Parser
+collections "Kho tệp riêng" as Store
+database "CSDL HTQLHDK" as DB
+Ops -> UI : Chọn tài sản, lần quét và tệp ZAP
+UI -> Svc : Tải tệp và metadata
+ref over UI,DB : SD-00: Ops; Asset Active; scan Completed/Result Imported đúng asset
+Svc -> Svc : Nhận có giới hạn; tính SHA-256 từ byte gốc
+Svc -> DB : Tìm lô theo asset_id, scan_id, file_sha256
+DB --> Svc : Lô hiện có hoặc chưa có
+alt Lô đã tồn tại
+  Svc --> UI : Trả batch_id và trạng thái cũ; không nhập lại
+else Lô mới
+  Svc -> Store : Lưu tệp gốc riêng, mã hóa và bất biến
+  Store --> Svc : object_key, checksum, key_ref
+  Svc -> DB : TX: tạo import_batch Received + metadata gốc + audit
+  note over Svc,DB : UNIQUE phân xử nhập đồng thời; bên thua trả lô cũ và dừng
+  Svc -> DB : TX: chuyển Validating + audit
+  Svc -> Parser : Kiểm Traditional JSON/XML, cấu trúc, asset/scope
+  Parser --> Svc : Lỗi toàn lô hoặc tập dòng hợp lệ/lỗi
+  alt Sai toàn lô hoặc tất cả dòng đều sai
+    Svc -> DB : TX: Rejected + import_error đã che + audit
+    Svc --> UI : Lô bị từ chối; không tạo Finding
+  else Lô đạt kiểm tra toàn cục
+    Svc -> DB : TX: Processing + audit
+    ref over Svc,DB : SD-06: chuẩn hóa từng dòng và lưu lỗi riêng
+    alt Gặp lỗi kỹ thuật
+      Svc -> DB : TX riêng: Failed, failure_code, bộ đếm thực tế + audit
+      Svc --> UI : Lỗi xử lý; giữ truy vết phần đã commit
+    else Không có lỗi kỹ thuật
+      Svc -> DB : Đối soát Observation, ImportError và tổng bản ghi
+      alt Có dòng thành công và lỗi
+        Svc -> DB : TX: Partially Completed + bộ đếm + audit
+      else Tất cả hợp lệ, kể cả 0 Alert
+        Svc -> DB : TX: Completed + bộ đếm + audit
+      end
+      Svc -> DB : Cùng TX hoàn tất: scan Result Imported; COMMIT
+      Svc --> UI : batch_id, trạng thái và thống kê đã che
+    end
+  end
+end
+note over Svc,Store : Lỗi kho/metadata: không báo thành công; đối soát tệp chưa liên kết
+note over Svc,DB : Rejected/Failed không hạ trạng thái của scan đã có lô nhập thành công
+@enduml

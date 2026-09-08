@@ -1,0 +1,42 @@
+sequenceDiagram
+    autonumber
+    actor Clock as Sự kiện thời gian
+    actor Ops as Nhóm vận hành quét
+    participant UI as Giao diện
+    participant Svc as Dịch vụ lịch và lần quét
+    participant DB as CSDL HTQLHDK
+    participant ZAP as OWASP ZAP bên ngoài
+    Clock->>Svc: Kiểm tra các lịch đến kỳ
+    Svc->>DB: BEGIN； khóa lịch； đọc asset và scope hiện hành
+    DB-->>Svc: Điều kiện và next_due_at
+    alt Chưa đến kỳ hoặc không đủ điều kiện
+    Svc->>DB: Kết thúc TX； không tạo Planned
+    else Đến kỳ hợp lệ
+    Svc->>DB: Kiểm lần quét cùng schedule_id và planned_at
+    alt Kỳ đã được tạo
+    Svc->>DB: Kết thúc TX； giữ lần quét hiện có
+    else Chưa tạo
+    Svc->>DB: TX: Planned + snapshot scope/target/config
+    Svc->>DB: Cùng TX: next_due_at + audit； COMMIT
+    Note over Svc,DB: SD-18: thông báo nội bộ sau commit
+    end
+    end
+    Ops->>UI: Xem lần quét được giao
+    UI->>Svc: Lấy kế hoạch quét trong phạm vi
+    Note over UI,DB: SD-00: kiểm Ops và tài sản
+    Svc-->>UI: Kế hoạch và mục tiêu đã duyệt
+    Ops->>ZAP: Thực hiện quét bên ngoài hệ thống
+    ZAP-->>Ops: Kết quả thực hiện và báo cáo JSON/XML
+    Ops->>UI: Ghi kết quả thực hiện
+    UI->>Svc: scan_id, thời gian, kết quả và lý do
+    Note over UI,DB: SD-00: kiểm quyền, trạng thái và dữ liệu
+    alt Hoàn thành
+    Svc->>DB: TX: scan_occurrence Completed, thời gian, người chạy + audit
+    Svc-->>UI: Cho phép nhập báo cáo theo SD-05
+    else Thất bại hoặc bỏ lỡ có lý do
+    Svc->>DB: TX: Failed hoặc Missed + outcome_reason + audit
+    Svc-->>UI: Đã ghi nhận； không tự chạy lại
+    else Thiếu lý do hoặc trạng thái không hợp lệ
+    Svc-->>UI: Từ chối cập nhật
+    end
+    Note over Ops,ZAP: Chỉ Ops tương tác ZAP； không có mũi tên từ backend gọi ZAP

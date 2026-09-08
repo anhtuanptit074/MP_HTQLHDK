@@ -1,0 +1,58 @@
+\set ON_ERROR_STOP on
+\echo 'Applying HTQLHDK V001 baseline'
+
+SELECT pg_advisory_lock(hashtextextended('htqlhdk:migration', 0));
+
+CREATE SCHEMA IF NOT EXISTS htqlhdk_migration;
+REVOKE ALL ON SCHEMA htqlhdk_migration FROM PUBLIC;
+CREATE TABLE IF NOT EXISTS htqlhdk_migration.schema_migration (
+    version varchar(40) PRIMARY KEY,
+    description text NOT NULL,
+    status varchar(20) NOT NULL CHECK (status IN ('Running', 'Applied', 'Failed')),
+    schema_sha256 char(64) NOT NULL,
+    guards_sha256 char(64) NOT NULL,
+    reference_sha256 char(64) NOT NULL,
+    started_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    applied_at timestamptz,
+    CHECK ((status = 'Applied') = (applied_at IS NOT NULL))
+);
+REVOKE ALL ON TABLE htqlhdk_migration.schema_migration FROM PUBLIC;
+
+SELECT EXISTS (
+    SELECT 1 FROM htqlhdk_migration.schema_migration
+    WHERE version = 'V001' AND status = 'Applied'
+) AS already_applied,
+EXISTS (
+    SELECT 1 FROM htqlhdk_migration.schema_migration
+    WHERE version = 'V001' AND status <> 'Applied'
+) AS incomplete \gset
+
+\if :incomplete
+    \echo 'ERROR: V001 has an incomplete prior attempt. Recreate a clean local/test database or follow the recovery runbook.'
+    \quit 3
+\endif
+
+\if :already_applied
+    \echo 'V001 already applied; no changes made.'
+\else
+    INSERT INTO htqlhdk_migration.schema_migration (
+        version, description, status, schema_sha256, guards_sha256, reference_sha256
+    ) VALUES (
+        'V001',
+        '27-table baseline, guards, views and fixed role-permission reference data',
+        'Running',
+        'b78afd73229a4ff38d48f9177624c4a29f8d6d9f3571511f0bd9917af9eb1ec0',
+        '3d414eb5de8a0da0d8d92375384d7fa4d804cc2a60db53f7811f07dc685cfc3a',
+        'e01b6efb993b6947e3e14f8924916be9eb64d6c70245be20bf4b1de567d7f009'
+    );
+
+    \ir ../../database/sql/01_schema.sql
+    \ir ../../database/sql/02_guards_and_views.sql
+    \ir ../../database/sql/03_reference_data.sql
+
+    UPDATE htqlhdk_migration.schema_migration
+    SET status = 'Applied', applied_at = CURRENT_TIMESTAMP
+    WHERE version = 'V001' AND status = 'Running';
+\endif
+
+SELECT pg_advisory_unlock(hashtextextended('htqlhdk:migration', 0));

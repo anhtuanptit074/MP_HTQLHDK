@@ -1,0 +1,100 @@
+@startuml
+hide circle
+skinparam linetype polyline
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+skinparam classBackgroundColor #EFF6FF
+skinparam classBorderColor #334155
+skinparam ArrowColor #64748B
+skinparam nodesep 50
+skinparam ranksep 70
+left to right direction
+title HTQLHDK 2.0 — 02 lich quet nhap ket qua
+entity "Tài sản website\nasset" as asset {
+  * id : bigint <<PK, FK>>
+  * code : varchar 
+  owner_id : bigint <<FK>>
+  technical_team_id : bigint <<FK>>
+  security_officer_id : bigint <<FK>>
+  * status : asset_status 
+  current_scope_id : bigint <<FK>>
+}
+entity "Phiên bản phạm vi quét\nasset_scope_revision" as asset_scope_revision {
+  * id : bigint <<PK>>
+  * asset_id : bigint <<FK>>
+  * version_no : integer 
+  * status : text 
+}
+entity "Lịch quét định kỳ\nscan_schedule" as scan_schedule {
+  * id : bigint <<PK>>
+  * code : varchar 
+  * asset_id : bigint <<FK>>
+  * scope_id : bigint <<FK>>
+  * operations_team_id : bigint <<FK>>
+  * status : schedule_status 
+  * target_urls : text_array 
+}
+entity "Lần quét cụ thể\nscan_occurrence" as scan_occurrence {
+  * id : bigint <<PK>>
+  * code : varchar 
+  * asset_id : bigint <<FK>>
+  * scope_id : bigint <<FK>>
+  schedule_id : bigint <<FK>>
+  * operations_team_id : bigint <<FK>>
+  * status : scan_status 
+  * target_urls : text_array 
+}
+entity "Lô nhập và metadata báo cáo ZAP gốc\nimport_batch" as import_batch {
+  * id : bigint <<PK>>
+  * code : varchar 
+  * asset_id : bigint <<FK>>
+  * scan_id : bigint <<FK>>
+  * file_sha256 : varchar 
+  * status : import_status 
+  * raw_object_key : text 
+}
+entity "Lỗi lô hoặc bản ghi\nimport_error" as import_error {
+  * id : bigint <<PK>>
+  * batch_id : bigint <<FK>>
+}
+entity "Phát hiện chuẩn hóa\nfinding" as finding {
+  * id : bigint <<PK, FK>>
+  * code : varchar 
+  * asset_id : bigint <<FK>>
+  * fingerprint : varchar 
+  * status : finding_status 
+  current_review_id : bigint <<FK>>
+  verification_result_id : bigint <<FK>>
+}
+entity "Lần xuất hiện trong một lần quét\nfinding_occurrence" as finding_occurrence {
+  * id : bigint <<PK>>
+  * asset_id : bigint <<FK>>
+  * finding_id : bigint <<FK>>
+  * scan_id : bigint <<FK>>
+}
+entity "Chi tiết cảnh báo nguồn theo lô\nfinding_observation" as finding_observation {
+  * id : bigint <<PK>>
+  * asset_id : bigint <<FK>>
+  * scan_id : bigint <<FK>>
+  * occurrence_id : bigint <<FK>>
+  * batch_id : bigint <<FK>>
+  * source_severity : source_severity 
+  * source_confidence : smallint 
+}
+asset_scope_revision |o--o| asset
+asset ||--o{ asset_scope_revision
+asset ||--o{ scan_schedule
+asset_scope_revision ||--o{ scan_schedule
+asset ||--o{ scan_occurrence
+asset_scope_revision ||--o{ scan_occurrence
+scan_schedule |o--o{ scan_occurrence
+asset ||--o{ import_batch
+scan_occurrence ||--o{ import_batch
+import_batch ||--o{ import_error
+asset ||--o{ finding
+finding ||--o{ finding_occurrence
+scan_occurrence ||--o{ finding_occurrence
+finding_occurrence ||--o{ finding_observation
+import_batch ||--o{ finding_observation
+@enduml

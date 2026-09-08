@@ -1,0 +1,85 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.400
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: src/frontend/package-lock.json
+      - name: Restore frontend exactly
+        working-directory: src/frontend
+        run: npm ci
+      - name: Verify stage-10 contracts and security baseline
+        shell: pwsh
+        run: ./scripts/verify-stage10.ps1
+      - name: Build backend
+        run: dotnet build HTQLHDK.slnx --configuration Release
+      - name: Lint frontend
+        working-directory: src/frontend
+        run: npm run lint
+      - name: Check frontend formatting
+        working-directory: src/frontend
+        run: npm run format:check
+      - name: Test frontend
+        working-directory: src/frontend
+        run: npm test
+      - name: Build frontend
+        working-directory: src/frontend
+        run: npm run build
+      - name: Audit frontend production dependencies
+        working-directory: src/frontend
+        run: npm audit --omit=dev --audit-level=high
+      - name: Audit NuGet dependencies
+        run: dotnet list HTQLHDK.slnx package --vulnerable --include-transitive
+
+  database:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17.11-alpine3.24
+        env:
+          POSTGRES_DB: htqlhdk_ci
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ci_ephemeral_database_only
+          TZ: UTC
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d htqlhdk_ci"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGDATABASE: htqlhdk_ci
+      PGUSER: postgres
+      PGPASSWORD: ci_ephemeral_database_only
+      PGOPTIONS: -c timezone=UTC
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply baseline
+        run: psql -v ON_ERROR_STOP=1 -f ops/migrations/V001__baseline.psql
+      - name: Verify baseline
+        run: psql -v ON_ERROR_STOP=1 -f ops/migrations/verify_baseline.psql
+      - name: Load synthetic fixture
+        run: psql -v ON_ERROR_STOP=1 -f tests/fixtures/sql/load_test_fixture.psql
+      - name: Prove migration rerun is a no-op
+        run: psql -v ON_ERROR_STOP=1 -f ops/migrations/V001__baseline.psql

@@ -1,0 +1,1443 @@
+openapi: 3.1.0
+info:
+  title: HTQLHDK API
+  version: 1.0.0
+  description: >-
+    Hợp đồng API giai đoạn 8 cho F-01..F-04. OWASP ZAP chạy bên ngoài;
+    API không cung cấp năng lực điều khiển scanner. Mọi dữ liệu thông thường đã che.
+servers:
+  - url: /api/v1
+security:
+  - oidc: []
+tags:
+  - {name: Context}
+  - {name: Access}
+  - {name: Assets}
+  - {name: Schedules}
+  - {name: Imports}
+  - {name: Findings}
+  - {name: Tickets}
+  - {name: Verification}
+  - {name: Risk}
+  - {name: Reports}
+  - {name: Audit}
+  - {name: Notifications}
+x-api-rules:
+  authorization: Default deny; permission + active asset grant + owner/task scope checked server-side per request.
+  masking: Ordinary endpoints return masked data only; raw/evidence/export content uses separate audited streams.
+  concurrency: Mutations of versioned resources require If-Match; replayable creates/actions require Idempotency-Key.
+  transactions: Success audit is atomic with business writes; denial/failure audit uses an independent transaction.
+  time: RFC 3339 UTC; schedule timezone is an IANA identifier.
+x-internal-processes:
+  - id: import-validate-normalize
+    useCases: [UC-I02, UC-I03, UC-I04, UC-I05, UC-I06, UC-I07, UC-I08, UC-I09, UC-I10, UC-I11]
+    trigger: Durable worker claims an ImportBatch created by createImport.
+  - id: schedule-due-and-missed
+    useCases: [UC-S05, UC-S07]
+    trigger: Durable worker claims due schedules; it never starts ZAP.
+  - id: risk-expiry
+    useCases: [UC-RA05, UC-RA06]
+    trigger: Durable worker evaluates applied approvals and reopens when expiry/condition/risk rules require it.
+  - id: deadline-notification
+    useCases: [UC-R12, UC-C08]
+    trigger: Durable worker creates minimal in-app notifications from approved policy.
+
+paths:
+  /context:
+    get:
+      tags: [Context]
+      operationId: getCurrentContext
+      summary: Lấy danh tính và quyền hiệu lực của người dùng
+      x-use-cases: [UC-C09]
+      x-contract:
+        purpose: Phục vụ Auth/context và không coi claim IdP là quyền nghiệp vụ.
+        actors: [authenticated]
+        scope: Chỉ trả grant chưa thu hồi của chính người dùng; assetId null không phải wildcard.
+        state: Không đổi trạng thái.
+        transaction: Read-only snapshot app_user, user_role và v_role_permission.
+        concurrency: Quyền được đọc lại mỗi request; không cache qua request.
+        audit: Không audit mỗi lần lấy context; auth denial được audit theo policy.
+        tests: [inactive user, revoked grant, null asset not wildcard]
+      responses:
+        '200': {description: Ngữ cảnh hiện hành, content: {application/json: {schema: {$ref: '#/components/schemas/UserContext'}}}}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+
+  /access-grants:
+    post:
+      tags: [Access]
+      operationId: createAccessGrant
+      summary: Gán vai trò, asset scope và quyền nhạy cảm
+      x-use-cases: [UC-C01, UC-C07]
+      x-contract:
+        purpose: Cấp quyền hỗ trợ F-01..F-04.
+        actors: [ADMIN]
+        scope: ADMIN quản lý grant nhưng không nhờ đó đọc dữ liệu asset; grant nhạy cảm bắt buộc asset cụ thể và lý do.
+        state: Tạo grant Active; không sửa grant cũ để tạo lịch sử giả.
+        transaction: Lock app_user và asset nếu có; insert user_role; insert Permission audit; commit.
+        concurrency: Unique active-grant conflict trả grant hiện có hoặc CON-003.
+        audit: access.grant Success/Denied/Failure, before null, after đã che.
+        tests: [admin success, non-admin denied, sensitive without asset rejected, duplicate concurrent]
+      parameters: [{$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/AccessGrantInput'}}}}
+      responses:
+        '201': {description: Grant đã tạo, content: {application/json: {schema: {$ref: '#/components/schemas/Resource'}}}}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '422': {$ref: '#/components/responses/Unprocessable'}
+  /access-grants/{grantId}/revoke:
+    post:
+      tags: [Access]
+      operationId: revokeAccessGrant
+      summary: Thu hồi quyền
+      x-use-cases: [UC-C02, UC-C07]
+      x-contract:
+        purpose: Thu hồi có hiệu lực từ request kế tiếp.
+        actors: [ADMIN]
+        scope: Chỉ quản lý grant; không mở quyền dữ liệu asset cho ADMIN.
+        state: Active sang Revoked; không hard delete.
+        transaction: Lock user_role; set revoked_at/by/reason; audit; commit.
+        concurrency: If-Match bắt buộc; grant đã thu hồi trả STATE-001 hoặc replay result.
+        audit: access.revoke với before/after đã che.
+        tests: [success, stale version, already revoked, denial audit]
+      parameters:
+        - {$ref: '#/components/parameters/GrantId'}
+        - {$ref: '#/components/parameters/IfMatch'}
+        - {$ref: '#/components/parameters/IdempotencyKey'}
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/ReasonInput'}}}}
+      responses:
+        '200': {description: Grant đã thu hồi, content: {application/json: {schema: {$ref: '#/components/schemas/Resource'}}}}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '412': {$ref: '#/components/responses/PreconditionFailed'}
+        '409': {$ref: '#/components/responses/Conflict'}
+
+  /assets:
+    get:
+      tags: [Assets]
+      operationId: listAssets
+      summary: Danh sách tài sản trong phạm vi
+      x-use-cases: [UC-A07, UC-C09]
+      x-contract:
+        purpose: Worklist tài sản đã lọc quyền.
+        actors: [SECURITY, OWNER, SCAN_OPS, REMEDIATOR, RISK_APPROVER, AUDITOR]
+        scope: Active asset grant; OWNER đúng owner; REMEDIATOR có ticket hiện hành.
+        state: Không đổi trạng thái.
+        transaction: Read-only; query bắt đầu từ authorized asset IDs.
+        concurrency: Cursor gồm sort key và id; snapshot không cam kết giữa các trang.
+        audit: Chỉ audit khi policy coi truy vấn là nhạy cảm; denial luôn audit.
+        tests: [cross-asset IDOR, revoked grant, stable cursor, masking]
+      parameters: [{$ref: '#/components/parameters/PageAfter'}, {$ref: '#/components/parameters/PageSize'}]
+      responses:
+        '200': {$ref: '#/components/responses/PagedResources'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+    post:
+      tags: [Assets]
+      operationId: createAsset
+      summary: Khai báo Asset Draft
+      x-use-cases: [UC-A01]
+      x-contract:
+        purpose: Tạo định danh tài sản và dữ liệu khai báo ban đầu.
+        actors: [SECURITY, OWNER]
+        scope: SECURITY/OWNER phải có quyền declare; OWNER tạo cho chính mình theo policy.
+        state: null sang Draft.
+        transaction: Validate normalized asset code/base URL; insert asset; audit; commit.
+        concurrency: Idempotency key và unique asset code; bên thua nhận AST-001/CON-003.
+        audit: asset.create, after không chứa bí mật.
+        tests: [success, duplicate, invalid URL, idempotent replay, denied]
+      parameters: [{$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/AssetCreate'}}}}
+      responses:
+        '201': {description: Asset Draft, headers: {ETag: {$ref: '#/components/headers/ETag'}}, content: {application/json: {schema: {$ref: '#/components/schemas/Asset'}}}}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '422': {$ref: '#/components/responses/Unprocessable'}
+  /assets/{assetId}:
+    get:
+      tags: [Assets]
+      operationId: getAsset
+      summary: Xem chi tiết tài sản đã che
+      x-use-cases: [UC-A07, UC-C09]
+      x-contract:
+        purpose: Trả Asset, scope hiện hành và thông tin hỗ trợ tối thiểu.
+        actors: [SECURITY, OWNER, SCAN_OPS, REMEDIATOR, RISK_APPROVER, AUDITOR]
+        scope: Permission asset.read + asset/task scope; chống IDOR trước load chi tiết.
+        state: Không đổi trạng thái.
+        transaction: Read-only consistent query.
+        concurrency: Response có ETag từ row_version.
+        audit: Denied audit; dữ liệu thông thường không chứa object/key/raw.
+        tests: [in-scope, out-of-scope, masked fields]
+      parameters: [{$ref: '#/components/parameters/AssetId'}]
+      responses:
+        '200': {description: Asset, headers: {ETag: {$ref: '#/components/headers/ETag'}}, content: {application/json: {schema: {$ref: '#/components/schemas/Asset'}}}}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+    patch:
+      tags: [Assets]
+      operationId: updateAsset
+      summary: Cập nhật thông tin Asset
+      x-use-cases: [UC-A02]
+      x-contract:
+        purpose: Sửa trường được phép; thay đổi ảnh hưởng scope cần revision mới/phê duyệt lại.
+        actors: [SECURITY, OWNER]
+        scope: asset.update trên đúng asset; OWNER đúng owner.
+        state: Giữ Draft/Pending Approval hoặc cập nhật metadata được policy cho phép; không sửa Retired.
+        transaction: Lock asset; validate state/version; update allowlist fields; audit; commit.
+        concurrency: If-Match bắt buộc.
+        audit: asset.update before/after đã che.
+        tests: [draft update, forbidden field, stale ETag, retired rejected]
+      parameters: [{$ref: '#/components/parameters/AssetId'}, {$ref: '#/components/parameters/IfMatch'}]
+      requestBody: {required: true, content: {application/merge-patch+json: {schema: {$ref: '#/components/schemas/AssetUpdate'}}}}
+      responses:
+        '200': {description: Asset đã cập nhật, headers: {ETag: {$ref: '#/components/headers/ETag'}}, content: {application/json: {schema: {$ref: '#/components/schemas/Asset'}}}}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '412': {$ref: '#/components/responses/PreconditionFailed'}
+  /assets/{assetId}/scopes:
+    post:
+      tags: [Assets]
+      operationId: createScopeRevision
+      summary: Tạo phiên bản phạm vi Draft
+      x-use-cases: [UC-A01, UC-A02]
+      x-contract:
+        purpose: Tạo revision gồm Include/Exclude và khung giờ; không sửa scope kết luận.
+        actors: [SECURITY, OWNER]
+        scope: asset.update trên đúng asset; OWNER đúng owner.
+        state: null sang Draft; baseRevision nếu có phải cùng asset.
+        transaction: Lock asset; allocate revision; insert scope/rules/windows; audit; commit.
+        concurrency: Idempotency + unique asset/revision; không overwrite revision cạnh tranh.
+        audit: asset.scope.create với nội dung đã chuẩn hóa/che.
+        tests: [include required, invalid IANA timezone, cross-asset base, concurrent create]
+      parameters: [{$ref: '#/components/parameters/AssetId'}, {$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/ScopeRevisionInput'}}}}
+      responses:
+        '201': {description: Scope Draft, content: {application/json: {schema: {$ref: '#/components/schemas/Resource'}}}}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '422': {$ref: '#/components/responses/Unprocessable'}
+  /assets/{assetId}/scopes/{scopeId}:
+    put:
+      tags: [Assets]
+      operationId: updateScopeRevision
+      summary: Sửa scope Draft
+      x-use-cases: [UC-A02]
+      x-contract:
+        purpose: Thay toàn bộ snapshot rule/window của revision Draft.
+        actors: [SECURITY, OWNER]
+        scope: asset.update, assetId/scopeId cùng tài sản; OWNER đúng owner.
+        state: Chỉ Draft; Approved/Rejected bất biến.
+        transaction: Lock asset rồi scope; replace children in stable order; audit; commit.
+        concurrency: If-Match bắt buộc; stale trả CON-002.
+        audit: asset.scope.update before/after đã che.
+        tests: [draft success, approved immutable, stale version, exclude precedence]
+      parameters: [{$ref: '#/components/parameters/AssetId'}, {$ref: '#/components/parameters/ScopeId'}, {$ref: '#/components/parameters/IfMatch'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/ScopeRevisionInput'}}}}
+      responses:
+        '200': {description: Scope đã sửa, content: {application/json: {schema: {$ref: '#/components/schemas/Resource'}}}}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '412': {$ref: '#/components/responses/PreconditionFailed'}
+        '422': {$ref: '#/components/responses/Unprocessable'}
+  /assets/{assetId}/scopes/{scopeId}/submit:
+    post:
+      tags: [Assets]
+      operationId: submitScopeRevision
+      summary: Gửi scope để Owner xác nhận/phê duyệt
+      x-use-cases: [UC-A01, UC-A02]
+      x-contract:
+        purpose: Gửi snapshot Draft cho Owner xác nhận mà chưa áp dụng scope.
+        actors: [SECURITY, OWNER]
+        scope: asset.update trên cùng asset; OWNER đúng owner.
+        state: Scope và Asset giữ Draft; tạo dấu vết gửi/audit và thông báo tối thiểu vì DB không có trạng thái Awaiting Owner Confirmation.
+        transaction: Lock asset/scope; validate rules/windows; insert audit submit; commit; enqueue notification idempotent.
+        concurrency: If-Match + idempotency; chỉ một transition thắng.
+        audit: asset.scope.submit from/to.
+        tests: [complete scope, missing include, stale version, duplicate submit]
+      parameters: [{$ref: '#/components/parameters/AssetId'}, {$ref: '#/components/parameters/ScopeId'}, {$ref: '#/components/parameters/IfMatch'}, {$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/ReasonInput'}}}}
+      responses:
+        '200': {description: Scope Pending Approval, content: {application/json: {schema: {$ref: '#/components/schemas/Resource'}}}}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '412': {$ref: '#/components/responses/PreconditionFailed'}
+        '422': {$ref: '#/components/responses/Unprocessable'}
+  /assets/{assetId}/scopes/{scopeId}/confirm:
+    post:
+      tags: [Assets]
+      operationId: confirmScopeRevision
+      summary: Owner xác nhận thông tin/phạm vi
+      x-use-cases: [UC-A03]
+      x-contract:
+        purpose: Ghi xác nhận Owner trước quyết định SECURITY.
+        actors: [OWNER]
+        scope: asset.confirm; actor là owner hiện hành của asset.
+        state: Scope Draft→Pending Approval; với tài sản mới Asset Draft→Pending Approval; thay đổi scope của Asset Active giữ Asset Active và scope cũ tiếp tục hiện hành.
+        transaction: Lock asset/scope; validate ownership/content; set confirmed_by/at and scope state; update new asset state when applicable; audit; commit.
+        concurrency: If-Match; xác nhận lặp cùng key trả kết quả cũ.
+        audit: asset.scope.confirm.
+        tests: [owner success, other owner denied, incomplete scope, concurrent edit]
+      parameters: [{$ref: '#/components/parameters/AssetId'}, {$ref: '#/components/parameters/ScopeId'}, {$ref: '#/components/parameters/IfMatch'}, {$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/ReasonInput'}}}}
+      responses:
+        '200': {description: Đã xác nhận, content: {application/json: {schema: {$ref: '#/components/schemas/Resource'}}}}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /assets/{assetId}/scopes/{scopeId}/decision:
+    post:
+      tags: [Assets]
+      operationId: decideScopeRevision
+      summary: SECURITY phê duyệt hoặc từ chối scope
+      x-use-cases: [UC-A04]
+      x-contract:
+        purpose: Kết luận scope và cập nhật scope hiện hành khi Approved.
+        actors: [SECURITY]
+        scope: asset.approve trên đúng asset.
+        state: Scope Pending Approval→Approved/Rejected; approve tài sản mới làm Asset Pending Approval→Active, reject làm Asset Pending Approval→Draft; với thay đổi scope, Asset giữ trạng thái hiện hành và scope cũ nếu reject.
+        transaction: Lock asset rồi scope; validate owner confirmation; set decision; approve atomically sets current_scope_id/new Asset Active, reject restores new Asset Draft; audit; commit.
+        concurrency: If-Match; chỉ một quyết định thắng.
+        audit: asset.scope.decision with from/to/reason.
+        tests: [approve, reject, owner missing, stale, competing decisions]
+      parameters: [{$ref: '#/components/parameters/AssetId'}, {$ref: '#/components/parameters/ScopeId'}, {$ref: '#/components/parameters/IfMatch'}, {$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/DecisionInput'}}}}
+      responses:
+        '200': {description: Quyết định đã ghi, content: {application/json: {schema: {$ref: '#/components/schemas/Resource'}}}}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '422': {$ref: '#/components/responses/Unprocessable'}
+  /assets/{assetId}/transitions:
+    post:
+      tags: [Assets]
+      operationId: transitionAsset
+      summary: Kích hoạt, tạm dừng, tiếp tục hoặc ngừng tài sản
+      x-use-cases: [UC-A05, UC-A06, UC-A02]
+      x-contract:
+        purpose: Quản lý vòng đời không xóa cứng.
+        actors: [SECURITY]
+        scope: asset.update trên đúng asset.
+        state: Active↔Suspended; Active/Suspended→Retired; không hồi sinh Retired. Pending Approval→Active chỉ xảy ra trong decideScopeRevision.
+        transaction: Lock asset/current scope/schedules; validate target; update asset and pause affected schedules when required; audit; commit.
+        concurrency: If-Match; stable lock order asset then schedules.
+        audit: asset.transition with from/to/reason.
+        tests: [activate guard, suspend cascaded pause, retire, invalid edge, stale]
+      parameters: [{$ref: '#/components/parameters/AssetId'}, {$ref: '#/components/parameters/IfMatch'}, {$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/TransitionInput'}}}}
+      responses:
+        '200': {description: Asset sau chuyển trạng thái, content: {application/json: {schema: {$ref: '#/components/schemas/Asset'}}}}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '412': {$ref: '#/components/responses/PreconditionFailed'}
+        '422': {$ref: '#/components/responses/Unprocessable'}
+
+  /assets/{assetId}/schedules:
+    get:
+      tags: [Schedules]
+      operationId: listAssetSchedules
+      summary: Danh sách lịch của tài sản
+      x-use-cases: [UC-S05, UC-C09]
+      x-contract:
+        purpose: Theo dõi lịch và kỳ đến hạn trong phạm vi.
+        actors: [SECURITY, OWNER, SCAN_OPS, REMEDIATOR, RISK_APPROVER, AUDITOR]
+        scope: schedule.read + asset/task scope.
+        state: Không đổi trạng thái.
+        transaction: Read-only filtered query.
+        concurrency: Cursor ổn định.
+        audit: Denied audit; response đã che.
+        tests: [scope filtering, due filter, cursor]
+      parameters: [{$ref: '#/components/parameters/AssetId'}, {$ref: '#/components/parameters/PageAfter'}, {$ref: '#/components/parameters/PageSize'}]
+      responses:
+        '200': {$ref: '#/components/responses/PagedResources'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+    post:
+      tags: [Schedules]
+      operationId: createSchedule
+      summary: Tạo lịch quét Draft
+      x-use-cases: [UC-S01]
+      x-contract:
+        purpose: Khai báo lịch cho ZAP được vận hành bên ngoài.
+        actors: [SECURITY]
+        scope: schedule.manage trên asset.
+        state: null sang Draft; không khởi chạy scanner.
+        transaction: Lock asset/current scope; validate target/timezone/window; insert schedule; audit; commit.
+        concurrency: Idempotency; duplicate business key trả conflict.
+        audit: schedule.create.
+        tests: [active asset, outside scope, invalid timezone, duplicate]
+      parameters: [{$ref: '#/components/parameters/AssetId'}, {$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/ScheduleInput'}}}}
+      responses:
+        '201': {description: Lịch Draft, content: {application/json: {schema: {$ref: '#/components/schemas/Resource'}}}}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '422': {$ref: '#/components/responses/Unprocessable'}
+  /schedules/{scheduleId}:
+    put:
+      tags: [Schedules]
+      operationId: updateSchedule
+      summary: Cập nhật lịch
+      x-use-cases: [UC-S02]
+      x-contract:
+        purpose: Sửa snapshot lịch theo cạnh cho phép.
+        actors: [SECURITY]
+        scope: schedule.manage trên asset của lịch.
+        state: Draft/Paused được sửa; thay đổi material khi Active buộc pause/phê duyệt lại theo policy.
+        transaction: Lock asset then schedule; validate scope/window; update; audit; commit.
+        concurrency: If-Match bắt buộc.
+        audit: schedule.update before/after.
+        tests: [draft edit, active restricted edit, stale, out-of-scope target]
+      parameters: [{$ref: '#/components/parameters/ScheduleId'}, {$ref: '#/components/parameters/IfMatch'}]
+      requestBody: {required: true, content: {application/merge-patch+json: {schema: {$ref: '#/components/schemas/ScheduleInput'}}}}
+      responses:
+        '200': {description: Lịch đã sửa, content: {application/json: {schema: {$ref: '#/components/schemas/Resource'}}}}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '412': {$ref: '#/components/responses/PreconditionFailed'}
+  /schedules/{scheduleId}/transitions:
+    post:
+      tags: [Schedules]
+      operationId: transitionSchedule
+      summary: Kích hoạt, tiếp tục, tạm dừng, hết hạn hoặc hủy lịch
+      x-use-cases: [UC-S03, UC-S04]
+      x-contract:
+        purpose: Áp cạnh vòng đời lịch.
+        actors: [SECURITY]
+        scope: schedule.manage trên asset của lịch.
+        state: Draft/Paused→Active; Active→Paused/Expired/Cancelled; Paused→Cancelled; chỉ cạnh đã duyệt.
+        transaction: Lock asset/current scope then schedule; validate Active guards; update; audit; commit.
+        concurrency: If-Match + idempotency.
+        audit: schedule.transition from/to/reason.
+        tests: [activate, pause, invalid asset, invalid edge, racing transitions]
+      parameters: [{$ref: '#/components/parameters/ScheduleId'}, {$ref: '#/components/parameters/IfMatch'}, {$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/TransitionInput'}}}}
+      responses:
+        '200': {description: Lịch sau chuyển, content: {application/json: {schema: {$ref: '#/components/schemas/Resource'}}}}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '422': {$ref: '#/components/responses/Unprocessable'}
+  /schedules/{scheduleId}/confirm-time:
+    post:
+      tags: [Schedules]
+      operationId: confirmScheduleTime
+      summary: Owner xác nhận thời gian quét
+      x-use-cases: [UC-S08]
+      x-contract:
+        purpose: Ghi xác nhận thời gian trước khi kích hoạt theo policy.
+        actors: [OWNER]
+        scope: schedule.confirm_time; actor đúng owner asset.
+        state: Không tự Active; tạo audit/confirmation fields của lịch.
+        transaction: Lock asset/schedule; validate owner and proposed time; update confirmation; audit; commit.
+        concurrency: If-Match và idempotency.
+        audit: schedule.confirm_time.
+        tests: [owner success, wrong owner, stale, outside window]
+      parameters: [{$ref: '#/components/parameters/ScheduleId'}, {$ref: '#/components/parameters/IfMatch'}, {$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/ReasonInput'}}}}
+      responses:
+        '200': {description: Đã xác nhận, content: {application/json: {schema: {$ref: '#/components/schemas/Resource'}}}}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '412': {$ref: '#/components/responses/PreconditionFailed'}
+  /schedules/{scheduleId}/occurrences:
+    post:
+      tags: [Schedules]
+      operationId: createScanOccurrence
+      summary: Ghi nhận một kỳ/lần quét bên ngoài
+      x-use-cases: [UC-S05, UC-S06]
+      x-contract:
+        purpose: Tạo lần quét để vận hành ghi nhận kết quả ZAP bên ngoài.
+        actors: [SCAN_OPS, SECURITY]
+        scope: scan.record hoặc schedule.manage trên đúng asset.
+        state: null sang Planned theo miền scan_status.
+        transaction: Lock asset/schedule; validate due key/window; insert occurrence; audit; commit.
+        concurrency: Idempotency + unique schedule/due time.
+        audit: scan_occurrence.create.
+        tests: [due create, duplicate worker/manual, inactive schedule, wrong asset]
+      parameters: [{$ref: '#/components/parameters/ScheduleId'}, {$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/ScanOccurrenceInput'}}}}
+      responses:
+        '201': {description: Lần quét, content: {application/json: {schema: {$ref: '#/components/schemas/Resource'}}}}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '422': {$ref: '#/components/responses/Unprocessable'}
+  /scan-occurrences:
+    get:
+      tags: [Schedules]
+      operationId: listScanOccurrences
+      summary: Danh sách các lần quét định kỳ/xác minh
+      x-use-cases: [UC-S05, UC-S06, UC-R08]
+      x-contract:
+        purpose: Chọn/theo dõi lần quét bên ngoài và trạng thái nhập kết quả.
+        actors: [SECURITY, OWNER, SCAN_OPS, REMEDIATOR, RISK_APPROVER, AUDITOR]
+        scope: schedule.read + asset/task scope; assetId filter vẫn được kiểm quyền.
+        state: Không đổi.
+        transaction: Read-only authorized query theo planned_at/id.
+        concurrency: Cursor ổn định; không đảm bảo snapshot qua nhiều trang.
+        audit: Denied audit; config snapshot đã che.
+        tests: [periodic, verification, asset filter IDOR, cursor, masking]
+      parameters: [{$ref: '#/components/parameters/PageAfter'}, {$ref: '#/components/parameters/PageSize'}, {name: assetId, in: query, schema: {type: integer, format: int64}}, {name: purpose, in: query, schema: {type: string, enum: [Periodic, Verification]}}]
+      responses:
+        '200': {$ref: '#/components/responses/PagedResources'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /scan-occurrences/{scanId}/transitions:
+    post:
+      tags: [Schedules]
+      operationId: transitionScanOccurrence
+      summary: Cập nhật trạng thái lần quét bên ngoài
+      x-use-cases: [UC-S06, UC-S07]
+      x-contract:
+        purpose: Ghi bắt đầu/hoàn thành/thất bại/bỏ lỡ; không điều khiển ZAP.
+        actors: [SCAN_OPS]
+        scope: scan.record trên asset; operator thuộc nhóm được giao nếu có.
+        state: Theo scan_status; Failed/Missed bắt buộc reason; Completed bắt buộc actual times.
+        transaction: Lock asset then occurrence; validate edge/time; update; audit; commit.
+        concurrency: If-Match; một terminal transition thắng.
+        audit: scan_occurrence.transition from/to/reason.
+        tests: [completed, failed reason, missed, invalid edge, racing terminal]
+      parameters: [{$ref: '#/components/parameters/ScanId'}, {$ref: '#/components/parameters/IfMatch'}, {$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/ScanTransitionInput'}}}}
+      responses:
+        '200': {description: Lần quét sau cập nhật, content: {application/json: {schema: {$ref: '#/components/schemas/Resource'}}}}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '422': {$ref: '#/components/responses/Unprocessable'}
+
+  /assets/{assetId}/scan-occurrences/{scanId}/imports:
+    post:
+      tags: [Imports]
+      operationId: createImport
+      summary: Upload Traditional ZAP JSON/XML
+      x-use-cases: [UC-I01, UC-I02, UC-I03, UC-I04, UC-I05, UC-I06, UC-I09]
+      x-contract:
+        purpose: Lưu byte gốc bất biến và enqueue kiểm định/chuẩn hóa; trả lô cũ nếu trùng.
+        actors: [SCAN_OPS]
+        scope: import.create trên asset; assetId/scanId cùng nhau; Asset Active và scan Completed.
+        state: null→Received; worker xử lý Received→Validating→Processing→Completed/Partially Completed/Rejected/Failed.
+        transaction: Stream temp while hash/limit; object finalize; DB lock asset/scan and dedupe key; insert batch+audit; compensate/reconcile object if DB fails.
+        concurrency: Idempotency + unique asset/scan/file_sha256; duplicate returns 200 existing with replay header.
+        audit: import.upload Success/Denied/Failure; không log filename/token/raw bytes.
+        tests: [json, xml, oversized, bad media, duplicate concurrent, object failure, wrong scan]
+      parameters: [{$ref: '#/components/parameters/AssetId'}, {$ref: '#/components/parameters/ScanId'}, {$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file, format]
+              properties:
+                file: {type: string, format: binary}
+                format: {type: string, enum: [Traditional JSON, Traditional XML]}
+      responses:
+        '201': {description: Lô mới Received, content: {application/json: {schema: {$ref: '#/components/schemas/ImportBatch'}}}}
+        '200': {description: Lô trùng đã tồn tại, content: {application/json: {schema: {$ref: '#/components/schemas/ImportBatch'}}}}
+        '413': {$ref: '#/components/responses/PayloadTooLarge'}
+        '415': {$ref: '#/components/responses/UnsupportedMedia'}
+        '422': {$ref: '#/components/responses/Unprocessable'}
+  /imports/{importId}:
+    get:
+      tags: [Imports]
+      operationId: getImport
+      summary: Xem trạng thái và thống kê lô nhập
+      x-use-cases: [UC-I12, UC-C09]
+      x-contract:
+        purpose: Theo dõi lô và bộ đếm đã đối soát.
+        actors: [SECURITY, OWNER, SCAN_OPS, REMEDIATOR, RISK_APPROVER, AUDITOR]
+        scope: import.read + asset/task scope.
+        state: Không đổi; polling chỉ đọc.
+        transaction: Read-only, không trả object key/checksum nếu không cần.
+        concurrency: ETag là row_version/status version; client backoff polling.
+        audit: Denied audit; response masking.
+        tests: [scope, each terminal state, counter consistency, no object key]
+      parameters: [{$ref: '#/components/parameters/ImportId'}]
+      responses:
+        '200': {description: Lô nhập, content: {application/json: {schema: {$ref: '#/components/schemas/ImportBatch'}}}}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /imports/{importId}/errors:
+    get:
+      tags: [Imports]
+      operationId: listImportErrors
+      summary: Danh sách lỗi nhập đã che
+      x-use-cases: [UC-I11, UC-I12]
+      x-contract:
+        purpose: Trả lỗi lô/bản ghi không lộ Attack/Evidence/bí mật.
+        actors: [SECURITY, OWNER, SCAN_OPS, REMEDIATOR, RISK_APPROVER, AUDITOR]
+        scope: import.read + asset/task scope.
+        state: Không đổi.
+        transaction: Read-only filtered/paginated.
+        concurrency: Cursor theo id.
+        audit: Denial audit; masking golden test.
+        tests: [partial errors, masking, cross-asset, cursor]
+      parameters: [{$ref: '#/components/parameters/ImportId'}, {$ref: '#/components/parameters/PageAfter'}, {$ref: '#/components/parameters/PageSize'}]
+      responses:
+        '200': {$ref: '#/components/responses/PagedResources'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /imports/{importId}/raw-content:
+    get:
+      tags: [Imports]
+      operationId: downloadRawImport
+      summary: Stream báo cáo gốc theo quyền riêng
+      x-use-cases: [UC-C04, UC-C07]
+      x-contract:
+        purpose: Đọc byte gốc bất biến qua API; không trả URL/object key.
+        actors: [SECURITY, OWNER, SCAN_OPS, REMEDIATOR, RISK_APPROVER, AUDITOR]
+        scope: import.read + exact asset grant can_read_raw_report=true + reason; kiểm lại trước stream.
+        state: Không đổi nghiệp vụ.
+        transaction: Authorize and write access audit before object read; verify checksum while streaming; failure audit if mismatch.
+        concurrency: Không cache; Content-Disposition an toàn; Range chỉ khi policy cho phép.
+        audit: raw_report.download mọi outcome với asset/import/correlation, không lưu nội dung.
+        tests: [explicit grant, role-only denied, revoked grant, checksum mismatch, no-store]
+      parameters: [{$ref: '#/components/parameters/ImportId'}, {$ref: '#/components/parameters/AccessReason'}]
+      responses:
+        '200': {description: Luồng JSON/XML gốc, headers: {Cache-Control: {schema: {type: string}, description: private, no-store}, X-Content-Type-Options: {schema: {type: string}, description: nosniff}}, content: {application/octet-stream: {schema: {type: string, format: binary}}}}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+
+  /findings:
+    get:
+      tags: [Findings]
+      operationId: listFindings
+      summary: Danh sách phát hiện đã che
+      x-use-cases: [UC-T01, UC-R12, UC-RA05, UC-C09]
+      x-contract:
+        purpose: Worklist theo asset, severity, status, due/expiry.
+        actors: [SECURITY, OWNER, SCAN_OPS, REMEDIATOR, RISK_APPROVER, AUDITOR]
+        scope: finding.read + asset/task scope; REMEDIATOR chỉ phiếu được giao.
+        state: Không đổi.
+        transaction: Read-only from authorized IDs/views; filter allowlist.
+        concurrency: Cursor theo sort key/id; page size cấu hình.
+        audit: Denied audit; không trả attack/evidence/raw.
+        tests: [role filters, remediator task scope, masked list, stable cursor]
+      parameters: [{$ref: '#/components/parameters/PageAfter'}, {$ref: '#/components/parameters/PageSize'}, {name: status, in: query, schema: {type: string}}, {name: assetId, in: query, schema: {type: integer, format: int64}}]
+      responses:
+        '200': {$ref: '#/components/responses/PagedResources'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /findings/{findingId}:
+    get:
+      tags: [Findings]
+      operationId: getFinding
+      summary: Xem chi tiết phát hiện đã che
+      x-use-cases: [UC-T01, UC-T05, UC-C09]
+      x-contract:
+        purpose: Trả nguồn xuất hiện, Source Risk/Confidence và Final Severity tách biệt.
+        actors: [SECURITY, OWNER, SCAN_OPS, REMEDIATOR, RISK_APPROVER, AUDITOR]
+        scope: finding.read + asset/task scope.
+        state: Không đổi.
+        transaction: Read-only consistent graph.
+        concurrency: ETag từ finding.row_version.
+        audit: Denied audit; sensitive evidence omitted/masked.
+        tests: [three severity concepts, IDOR, evidence masking, ETag]
+      parameters: [{$ref: '#/components/parameters/FindingId'}]
+      responses:
+        '200': {description: Finding đã che, headers: {ETag: {$ref: '#/components/headers/ETag'}}, content: {application/json: {schema: {$ref: '#/components/schemas/Finding'}}}}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /findings/{findingId}/occurrences:
+    get:
+      tags: [Findings]
+      operationId: listFindingOccurrences
+      summary: Xem các lần xuất hiện
+      x-use-cases: [UC-I10, UC-R09, UC-T01]
+      x-contract:
+        purpose: Truy vết Finding tới scan/import/occurrence.
+        actors: [SECURITY, OWNER, SCAN_OPS, REMEDIATOR, RISK_APPROVER, AUDITOR]
+        scope: finding.read + asset/task scope.
+        state: Không đổi.
+        transaction: Read-only, masked source fields.
+        concurrency: Cursor by observed_at/id.
+        audit: Denied audit.
+        tests: [trace completeness, masking, pagination]
+      parameters: [{$ref: '#/components/parameters/FindingId'}, {$ref: '#/components/parameters/PageAfter'}, {$ref: '#/components/parameters/PageSize'}]
+      responses:
+        '200': {$ref: '#/components/responses/PagedResources'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /findings/{findingId}/reviews:
+    get:
+      tags: [Findings]
+      operationId: listFindingReviews
+      summary: Lịch sử Final Severity/disposition
+      x-use-cases: [UC-T06, UC-C06]
+      x-contract:
+        purpose: Trả lịch sử review bất biến đã che.
+        actors: [SECURITY, AUDITOR]
+        scope: audit.business.read/finding.read trên asset.
+        state: Không đổi.
+        transaction: Read-only ordered history.
+        concurrency: Cursor by assessed_at/id.
+        audit: Denied audit; history immutable.
+        tests: [security, auditor, owner denied, no secret]
+      parameters: [{$ref: '#/components/parameters/FindingId'}, {$ref: '#/components/parameters/PageAfter'}, {$ref: '#/components/parameters/PageSize'}]
+      responses:
+        '200': {$ref: '#/components/responses/PagedResources'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+    post:
+      tags: [Findings]
+      operationId: createFindingReview
+      summary: Đề nghị/xác nhận Final Severity hoặc disposition
+      x-use-cases: [UC-T01, UC-T02, UC-T03, UC-T04, UC-T05]
+      x-contract:
+        purpose: Tạo review Severity/False Positive/Cancelled/Recheck có căn cứ; Owner xác nhận impact qua operation riêng.
+        actors: [SECURITY]
+        scope: SECURITY finding.assess/disposition trên đúng asset.
+        state: Tạo Proposed; không tự Applied nếu cần second review.
+        transaction: Lock finding; validate source/importer SoD and evidence; insert review; audit; commit.
+        concurrency: If-Match + idempotency; multiple proposals allowed but basedOnVersion recorded.
+        audit: finding.review.create with reason/evidence id, content masked.
+        tests: [severity, importer SoD, high downgrade second review, false-positive evidence, cancelled evidence]
+      parameters: [{$ref: '#/components/parameters/FindingId'}, {$ref: '#/components/parameters/IfMatch'}, {$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/FindingReviewInput'}}}}
+      responses:
+        '201': {description: Review, content: {application/json: {schema: {$ref: '#/components/schemas/Resource'}}}}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '422': {$ref: '#/components/responses/Unprocessable'}
+  /finding-reviews/{reviewId}/second-review:
+    post:
+      tags: [Findings]
+      operationId: secondReviewFindingReview
+      summary: Rà soát độc lập review
+      x-use-cases: [UC-T02, UC-T03]
+      x-contract:
+        purpose: Approved/Rejected bởi người đủ thẩm quyền khác assessor.
+        actors: [SECURITY, RISK_APPROVER]
+        scope: review.second trên cùng asset + authority policy.
+        state: Approve giữ review Proposed nhưng ghi reviewed fields/outcome; Reject đặt review Rejected; chỉ apply operation đổi proposal đã Approved/không cần review sang Applied.
+        transaction: Lock finding/review; verify reviewer independence; update reviewed fields/outcome; audit; commit.
+        concurrency: If-Match + idempotency.
+        audit: finding.review.second_review.
+        tests: [independent approve, self-review denied, no authority, racing reviewers]
+      parameters: [{$ref: '#/components/parameters/ReviewId'}, {$ref: '#/components/parameters/IfMatch'}, {$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/DecisionInput'}}}}
+      responses:
+        '200': {description: Kết quả rà soát, content: {application/json: {schema: {$ref: '#/components/schemas/Resource'}}}}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /finding-reviews/{reviewId}/confirm-impact:
+    post:
+      tags: [Findings]
+      operationId: confirmFindingBusinessImpact
+      summary: Owner xác nhận ảnh hưởng nghiệp vụ cho review
+      x-use-cases: [UC-T05]
+      x-contract:
+        purpose: Ghi owner confirmation/context vào Severity review hiện có, không tạo review_kind ngoài schema DB.
+        actors: [OWNER]
+        scope: asset.read/owner contribution; actor là owner hiện hành của Finding asset.
+        state: Finding/review giữ trạng thái; impact confirmation chỉ được ghi một lần hoặc theo ETag trước khi Applied.
+        transaction: Lock finding/review; verify review belongs to finding/current cycle; set impact_confirmed_by/at and context_masked; audit; commit.
+        concurrency: If-Match + idempotency; Applied review không sửa.
+        audit: finding.review.impact_confirm.
+        tests: [owner success, wrong owner, applied immutable, stale, masked context]
+      parameters: [{$ref: '#/components/parameters/ReviewId'}, {$ref: '#/components/parameters/IfMatch'}, {$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/ImpactConfirmationInput'}}}}
+      responses:
+        '200': {description: Đã xác nhận ảnh hưởng, content: {application/json: {schema: {$ref: '#/components/schemas/Resource'}}}}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '412': {$ref: '#/components/responses/PreconditionFailed'}
+  /finding-reviews/{reviewId}/apply:
+    post:
+      tags: [Findings]
+      operationId: applyFindingReview
+      summary: Áp dụng review vào Finding
+      x-use-cases: [UC-T02, UC-T03, UC-T04]
+      x-contract:
+        purpose: Cập nhật current review/final severity hoặc trạng thái disposition nguyên tử.
+        actors: [SECURITY]
+        scope: finding.assess/disposition trên asset.
+        state: New→Triaged hoặc current→False Positive/Cancelled theo review; không thêm cạnh ngoài nguồn.
+        transaction: Lock asset/finding/review/ticket; verify proposal current and approvals; mark Applied; update pointers/status/due; audit; commit.
+        concurrency: Finding If-Match; old proposal returns FND-003.
+        audit: finding.review.apply with from/to and review id.
+        tests: [apply severity, stale proposal, missing second review, due recalculation atomicity]
+      parameters: [{$ref: '#/components/parameters/ReviewId'}, {$ref: '#/components/parameters/IfMatch'}, {$ref: '#/components/parameters/IdempotencyKey'}]
+      responses:
+        '200': {description: Review đã áp dụng, content: {application/json: {schema: {$ref: '#/components/schemas/Finding'}}}}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '412': {$ref: '#/components/responses/PreconditionFailed'}
+        '422': {$ref: '#/components/responses/Unprocessable'}
+
+  /findings/{findingId}/tickets:
+    post:
+      tags: [Tickets]
+      operationId: createRemediationTicket
+      summary: Tạo phiếu khắc phục
+      x-use-cases: [UC-R01, UC-R02]
+      x-contract:
+        purpose: Tạo phiếu ổn định và assignment snapshot đầu tiên; không tự tạo từ từng dòng import.
+        actors: [SECURITY]
+        scope: ticket.assign trên asset.
+        state: Finding Triaged/Reopened→Assigned khi assignment hợp lệ.
+        transaction: Lock finding; find/reuse suitable ticket; insert ticket+Assignment event; update current_event/finding; audit; commit.
+        concurrency: If-Match + idempotency; concurrent create must not create duplicate active intent.
+        audit: ticket.create/assign and finding.transition.
+        tests: [new ticket, reuse policy, missing SLA, concurrent create, invalid finding state]
+      parameters: [{$ref: '#/components/parameters/FindingId'}, {$ref: '#/components/parameters/IfMatch'}, {$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/TicketEventInput'}}}}
+      responses:
+        '201': {description: Phiếu đã phân công, content: {application/json: {schema: {$ref: '#/components/schemas/Resource'}}}}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '422': {$ref: '#/components/responses/Unprocessable'}
+  /tickets:
+    get:
+      tags: [Tickets]
+      operationId: listTickets
+      summary: Danh sách phiếu theo phạm vi
+      x-use-cases: [UC-R12, UC-C09]
+      x-contract:
+        purpose: Worklist đang xử lý/sắp hạn/quá hạn.
+        actors: [SECURITY, OWNER, SCAN_OPS, REMEDIATOR, RISK_APPROVER, AUDITOR]
+        scope: ticket.read; REMEDIATOR chỉ current assignment.
+        state: Không đổi.
+        transaction: Read-only v_ticket_current + authorized assets/tasks.
+        concurrency: Cursor stable by due/id.
+        audit: Denied audit; masked data.
+        tests: [task scope, due filters, revoked assignment, cursor]
+      parameters: [{$ref: '#/components/parameters/PageAfter'}, {$ref: '#/components/parameters/PageSize'}]
+      responses:
+        '200': {$ref: '#/components/responses/PagedResources'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /tickets/{ticketId}:
+    get:
+      tags: [Tickets]
+      operationId: getTicket
+      summary: Xem phiếu và snapshot hiện hành
+      x-use-cases: [UC-R03, UC-R04, UC-R05, UC-R12]
+      x-contract:
+        purpose: Trả phiếu/current event và Finding status/severity đã che.
+        actors: [SECURITY, OWNER, SCAN_OPS, REMEDIATOR, RISK_APPROVER, AUDITOR]
+        scope: ticket.read; REMEDIATOR phải là current assignment, OWNER đúng owner.
+        state: Không đổi.
+        transaction: Read-only v_ticket_current after authorized ticket query.
+        concurrency: ETag từ current_event_id và Finding row_version.
+        audit: Denied audit; evidence chỉ metadata/summary masked.
+        tests: [current assignee, prior assignee denied, owner, IDOR, ETag]
+      parameters: [{$ref: '#/components/parameters/TicketId'}]
+      responses:
+        '200': {description: Phiếu hiện hành, headers: {ETag: {$ref: '#/components/headers/ETag'}}, content: {application/json: {schema: {$ref: '#/components/schemas/Resource'}}}}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /tickets/{ticketId}/events:
+    get:
+      tags: [Tickets]
+      operationId: listTicketEvents
+      summary: Lịch sử snapshot phiếu
+      x-use-cases: [UC-R03, UC-R04, UC-R05, UC-R13, UC-C06]
+      x-contract:
+        purpose: Trả assignment/progress/due history bất biến.
+        actors: [SECURITY, OWNER, REMEDIATOR, AUDITOR]
+        scope: ticket.read + asset/task scope.
+        state: Không đổi.
+        transaction: Read-only v_ticket_history.
+        concurrency: Cursor by event time/id.
+        audit: Denied audit; evidence content omitted.
+        tests: [snapshot ordering, task scope, masking]
+      parameters: [{$ref: '#/components/parameters/TicketId'}, {$ref: '#/components/parameters/PageAfter'}, {$ref: '#/components/parameters/PageSize'}]
+      responses:
+        '200': {$ref: '#/components/responses/PagedResources'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+    post:
+      tags: [Tickets]
+      operationId: appendTicketEvent
+      summary: Tiếp nhận, cập nhật tiến độ/biện pháp/bằng chứng, phân công hoặc đổi hạn
+      x-use-cases: [UC-R02, UC-R03, UC-R04, UC-R05, UC-R13]
+      x-contract:
+        purpose: Append snapshot đầy đủ; không patch lịch sử.
+        actors: [SECURITY, REMEDIATOR]
+        scope: SECURITY ticket.assign; REMEDIATOR ticket.update và current assignment.
+        state: Assigned→In Progress khi accept/progress; giữ trạng thái với event khác.
+        transaction: Lock finding then ticket/current event; validate previousEventId; insert full snapshot; move pointer/status if needed; audit; commit.
+        concurrency: If-Match and previousEventId; stale pointer TKT-003.
+        audit: ticket.event.append and optional finding.transition.
+        tests: [accept, progress, evidence, reassignment preserves remediation author, stale pointer]
+      parameters: [{$ref: '#/components/parameters/TicketId'}, {$ref: '#/components/parameters/IfMatch'}, {$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/TicketEventInput'}}}}
+      responses:
+        '201': {description: Snapshot mới, content: {application/json: {schema: {$ref: '#/components/schemas/Resource'}}}}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '422': {$ref: '#/components/responses/Unprocessable'}
+
+  /tickets/{ticketId}/submit-verification:
+    post:
+      tags: [Tickets]
+      operationId: submitTicketForVerification
+      summary: Chuyển phiếu/phát hiện chờ xác minh
+      x-use-cases: [UC-R06]
+      x-contract:
+        purpose: Khóa bản sửa đủ căn cứ trước yêu cầu quét xác minh.
+        actors: [REMEDIATOR]
+        scope: ticket.update + current assignment.
+        state: In Progress→Pending Verification.
+        transaction: Lock finding/ticket/current event; require method/evidence/remediated_by/at; append snapshot if needed; update finding; audit; commit.
+        concurrency: If-Match + current event pointer.
+        audit: finding.transition and ticket.submit_verification.
+        tests: [complete fix, missing evidence, wrong assignee, stale, 100-percent-only rejected]
+      parameters: [{$ref: '#/components/parameters/TicketId'}, {$ref: '#/components/parameters/IfMatch'}, {$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/ReasonInput'}}}}
+      responses:
+        '200': {description: Pending Verification, content: {application/json: {schema: {$ref: '#/components/schemas/Finding'}}}}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '422': {$ref: '#/components/responses/Unprocessable'}
+  /tickets/{ticketId}/verification-requests:
+    post:
+      tags: [Verification]
+      operationId: createVerificationRequest
+      summary: Tạo yêu cầu quét xác minh
+      x-use-cases: [UC-R07]
+      x-contract:
+        purpose: Liên kết yêu cầu với đúng remediation snapshot.
+        actors: [SECURITY]
+        scope: verification.request trên asset.
+        state: Request null→Requested; Finding vẫn Pending Verification.
+        transaction: Lock finding/ticket/current event; validate snapshot and state; insert request; audit; commit.
+        concurrency: Idempotency; multiple requests allowed only with explicit distinct purpose.
+        audit: verification.request.create.
+        tests: [valid snapshot, old snapshot, wrong asset, duplicate key]
+      parameters: [{$ref: '#/components/parameters/TicketId'}, {$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/VerificationRequestInput'}}}}
+      responses:
+        '201': {description: Yêu cầu xác minh, content: {application/json: {schema: {$ref: '#/components/schemas/Resource'}}}}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '422': {$ref: '#/components/responses/Unprocessable'}
+  /verification-requests/{verificationRequestId}/scan-occurrences:
+    post:
+      tags: [Verification]
+      operationId: createVerificationScanOccurrence
+      summary: Lập lần quét xác minh để vận hành thực hiện bên ngoài
+      x-use-cases: [UC-R08]
+      x-contract:
+        purpose: Tạo ScanOccurrence purpose Verification từ request; không khởi chạy ZAP.
+        actors: [SCAN_OPS, SECURITY]
+        scope: scan.record/verification.request trên cùng asset và operations team của request.
+        state: null→Scan Planned; VerificationRequest giữ Requested.
+        transaction: Lock asset→finding→verification request; derive scope/team/targets; validate planned window; insert scan with schedule_id null; audit; commit.
+        concurrency: Idempotency + application dedupe for request/planned time; concurrent duplicate returns existing/conflict.
+        audit: verification.scan.plan and scan_occurrence.create.
+        tests: [ops team success, no ZAP control, wrong team, evaluated request, duplicate]
+      parameters: [{$ref: '#/components/parameters/VerificationRequestId'}, {$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/ScanOccurrenceInput'}}}}
+      responses:
+        '201': {description: Lần quét xác minh Planned, content: {application/json: {schema: {$ref: '#/components/schemas/Resource'}}}}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '422': {$ref: '#/components/responses/Unprocessable'}
+  /verification-requests/{verificationRequestId}:
+    get:
+      tags: [Verification]
+      operationId: getVerificationRequest
+      summary: Xem yêu cầu và căn cứ xác minh đã che
+      x-use-cases: [UC-R07, UC-R08, UC-R09]
+      x-contract:
+        purpose: Trả request, remediation snapshot và các scan/import cùng asset đủ điều kiện để SECURITY đánh giá.
+        actors: [SECURITY, SCAN_OPS, REMEDIATOR]
+        scope: verification.request/scan.record/ticket.read tương ứng; REMEDIATOR chỉ current task.
+        state: Không đổi.
+        transaction: Read-only authorized graph; không tự gắn scan vào request vì schema lưu scan tại VerificationResult.
+        concurrency: ETag từ request status + Finding row_version.
+        audit: Denied audit; remediation/evidence masked.
+        tests: [security, assigned ops, remediator task, wrong asset, evaluated]
+      parameters: [{$ref: '#/components/parameters/VerificationRequestId'}]
+      responses:
+        '200': {description: Yêu cầu xác minh, headers: {ETag: {$ref: '#/components/headers/ETag'}}, content: {application/json: {schema: {$ref: '#/components/schemas/Resource'}}}}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /verification-requests/{verificationRequestId}/decision:
+    post:
+      tags: [Verification]
+      operationId: decideVerification
+      summary: Kết luận Closed hoặc Reopened
+      x-use-cases: [UC-R09, UC-R10, UC-R11]
+      x-contract:
+        purpose: Chọn scan/import đã đi qua F-02/F-03, ghi VerificationResult bất biến và áp trạng thái Finding nguyên tử.
+        actors: [SECURITY]
+        scope: verification.decide trên asset; evaluator không thuộc những người thực sự khắc phục.
+        state: Pending Verification→Closed/Reopened; không tái dùng result chu kỳ cũ.
+        transaction: Lock asset→finding→ticket event→request→batch; validate scan/import/coverage/fingerprint/SoD; insert result; update finding/request; audit; commit.
+        concurrency: Finding If-Match + idempotency; only one result can apply to current cycle.
+        audit: verification.decision + finding.transition with result/evidence IDs.
+        tests: [close, fingerprint reopens, invalid report reopens, old or wrong-asset scan, remediator denied, racing decisions, audit failure rollback]
+      parameters: [{$ref: '#/components/parameters/VerificationRequestId'}, {$ref: '#/components/parameters/IfMatch'}, {$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/VerificationDecisionInput'}}}}
+      responses:
+        '200': {description: Finding đã kết luận, content: {application/json: {schema: {$ref: '#/components/schemas/Finding'}}}}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '412': {$ref: '#/components/responses/PreconditionFailed'}
+        '422': {$ref: '#/components/responses/Unprocessable'}
+
+  /findings/{findingId}/risk-acceptances:
+    post:
+      tags: [Risk]
+      operationId: createRiskAcceptance
+      summary: Tạo đề nghị chấp nhận rủi ro
+      x-use-cases: [UC-RA01]
+      x-contract:
+        purpose: Lưu hồ sơ và trạng thái trước khi chờ phê duyệt.
+        actors: [OWNER, SECURITY]
+        scope: risk.request trên asset; OWNER đúng owner.
+        state: Triaged/Assigned/In Progress→Pending Risk Acceptance; record status Pending.
+        transaction: Lock finding; validate required masked fields/expiry proposal; insert request with previous status; update finding; audit; commit.
+        concurrency: Finding If-Match + idempotency; competing workflow action loses.
+        audit: risk.request.create + finding.transition.
+        tests: [three source states, invalid state, missing mitigation, concurrent ticket transition]
+      parameters: [{$ref: '#/components/parameters/FindingId'}, {$ref: '#/components/parameters/IfMatch'}, {$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/RiskAcceptanceInput'}}}}
+      responses:
+        '201': {description: Hồ sơ Pending, content: {application/json: {schema: {$ref: '#/components/schemas/Resource'}}}}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '422': {$ref: '#/components/responses/Unprocessable'}
+  /risk-acceptances/{riskAcceptanceId}:
+    get:
+      tags: [Risk]
+      operationId: getRiskAcceptance
+      summary: Xem hồ sơ/ quyết định rủi ro đã che
+      x-use-cases: [UC-RA02, UC-RA03, UC-RA04, UC-RA07]
+      x-contract:
+        purpose: Trả lịch sử hồ sơ, previous status, hiệu lực và renewal link không lộ nội dung chưa che.
+        actors: [SECURITY, OWNER, RISK_APPROVER, AUDITOR]
+        scope: finding.read/risk.request/risk.decide theo vai trò + asset; OWNER đúng owner.
+        state: Không đổi.
+        transaction: Read-only authorized risk/finding graph.
+        concurrency: ETag từ status/applied_at; quyết định terminal bất biến.
+        audit: Denied audit; content masked.
+        tests: [requester, approver, auditor, cross-asset, renewal chain]
+      parameters: [{$ref: '#/components/parameters/RiskAcceptanceId'}]
+      responses:
+        '200': {description: Hồ sơ rủi ro, headers: {ETag: {$ref: '#/components/headers/ETag'}}, content: {application/json: {schema: {$ref: '#/components/schemas/Resource'}}}}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+    patch:
+      tags: [Risk]
+      operationId: supplementRiskAcceptance
+      summary: Bổ sung hồ sơ rủi ro đang chờ
+      x-use-cases: [UC-RA02, UC-RA04]
+      x-contract:
+        purpose: Bổ sung dữ liệu theo yêu cầu; không sửa kết luận.
+        actors: [OWNER, SECURITY]
+        scope: risk.request trên asset; requester/owner hoặc SECURITY được phép.
+        state: Pending/Needs Information→Pending; Approved/Rejected bất biến.
+        transaction: Lock finding/risk; validate mutable status; update allowed fields; audit before/after masked; commit.
+        concurrency: If-Match.
+        audit: risk.request.supplement.
+        tests: [supplement, immutable decision, unauthorized owner, stale]
+      parameters: [{$ref: '#/components/parameters/RiskAcceptanceId'}, {$ref: '#/components/parameters/IfMatch'}]
+      requestBody: {required: true, content: {application/merge-patch+json: {schema: {$ref: '#/components/schemas/RiskAcceptancePatch'}}}}
+      responses:
+        '200': {description: Hồ sơ đã bổ sung, content: {application/json: {schema: {$ref: '#/components/schemas/Resource'}}}}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '412': {$ref: '#/components/responses/PreconditionFailed'}
+  /risk-acceptances:
+    get:
+      tags: [Risk]
+      operationId: listRiskAcceptances
+      summary: Danh sách hồ sơ chờ/sắp hết hạn
+      x-use-cases: [UC-RA02, UC-RA05]
+      x-contract:
+        purpose: Worklist Pending/Needs Information/Approved sắp hết hạn theo policy.
+        actors: [SECURITY, OWNER, RISK_APPROVER, AUDITOR]
+        scope: finding.read/risk permissions + asset; OWNER đúng owner.
+        state: Không đổi; danh sách không thay worker expiry.
+        transaction: Read-only authorized query; latest applied view chỉ là chỉ báo thời gian.
+        concurrency: Cursor by requested/valid_until/id.
+        audit: Denied audit; conditions/impact masked.
+        tests: [pending, expiring, expired before worker, owner scope, cursor]
+      parameters: [{$ref: '#/components/parameters/PageAfter'}, {$ref: '#/components/parameters/PageSize'}, {name: status, in: query, schema: {type: string, enum: [Pending, Needs Information, Approved, Rejected]}}, {name: expiringBefore, in: query, schema: {type: string, format: date-time}}]
+      responses:
+        '200': {$ref: '#/components/responses/PagedResources'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /risk-acceptances/{riskAcceptanceId}/decision:
+    post:
+      tags: [Risk]
+      operationId: decideRiskAcceptance
+      summary: Yêu cầu bổ sung, phê duyệt hoặc từ chối rủi ro
+      x-use-cases: [UC-RA02, UC-RA03, UC-RA04]
+      x-contract:
+        purpose: Ghi quyết định độc lập; approve áp Risk Accepted, reject khôi phục đúng trạng thái trước.
+        actors: [RISK_APPROVER]
+        scope: risk.decide trên asset + authority policy; approver khác requester.
+        state: Pending→Needs Information hoặc Approved/Rejected; Finding Pending Risk Acceptance→Risk Accepted/previous status.
+        transaction: Lock asset→finding→risk; validate authority/independence/conditions/validity; write decision/applied_at and finding in one transaction; audit; commit.
+        concurrency: Finding/risk If-Match + idempotency; first terminal decision wins.
+        audit: risk.decision + finding.transition with risk_acceptance_id.
+        tests: [needs info, approve, reject restore each prior state, self-approval, racing decisions, audit rollback]
+      parameters: [{$ref: '#/components/parameters/RiskAcceptanceId'}, {$ref: '#/components/parameters/IfMatch'}, {$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/RiskDecisionInput'}}}}
+      responses:
+        '200': {description: Quyết định đã áp dụng, content: {application/json: {schema: {$ref: '#/components/schemas/Resource'}}}}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '422': {$ref: '#/components/responses/Unprocessable'}
+  /risk-acceptances/{riskAcceptanceId}/renewals:
+    post:
+      tags: [Risk]
+      operationId: createRiskRenewal
+      summary: Tạo đề nghị gia hạn bằng hồ sơ mới
+      x-use-cases: [UC-RA07]
+      x-contract:
+        purpose: Giữ quyết định cũ bất biến; renewal chưa duyệt không kéo dài hạn.
+        actors: [OWNER, SECURITY]
+        scope: risk.request trên asset; OWNER đúng owner.
+        state: New risk record Pending with renewal_of_id; Finding giữ Risk Accepted khi quyết định cũ còn hiệu lực.
+        transaction: Lock finding/prior risk; require prior Approved+applied; insert renewal; audit; commit.
+        concurrency: Idempotency; unique/replay business intent.
+        audit: risk.renewal.create.
+        tests: [valid renewal, prior not applied, expired old decision, duplicate, old unchanged]
+      parameters: [{$ref: '#/components/parameters/RiskAcceptanceId'}, {$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/RiskAcceptanceInput'}}}}
+      responses:
+        '201': {description: Hồ sơ gia hạn Pending, content: {application/json: {schema: {$ref: '#/components/schemas/Resource'}}}}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '422': {$ref: '#/components/responses/Unprocessable'}
+
+  /evidence/{evidenceId}/content:
+    get:
+      tags: [Findings]
+      operationId: downloadEvidence
+      summary: Stream tệp bằng chứng nhạy cảm theo quyền riêng
+      x-use-cases: [UC-R05, UC-C04, UC-C07]
+      x-contract:
+        purpose: Đọc object bằng chứng qua API; evidence chỉ có summary thì trả 404 content.
+        actors: [SECURITY, OWNER, SCAN_OPS, REMEDIATOR, RISK_APPROVER, AUDITOR]
+        scope: finding.read/ticket.read + exact asset grant can_read_sensitive_evidence=true + reason; REMEDIATOR còn phải đúng task.
+        state: Không đổi.
+        transaction: Resolve evidence→finding→asset from authorized query; write access audit before stream; verify object checksum.
+        concurrency: Reauthorize every request; no-store/nosniff; grant revoked before stream fails closed.
+        audit: evidence.download mọi outcome; không lưu object key/hash/content.
+        tests: [explicit flag, role-only denied, task scope, text-only evidence, checksum mismatch, revoked grant]
+      parameters: [{$ref: '#/components/parameters/EvidenceId'}, {$ref: '#/components/parameters/AccessReason'}]
+      responses:
+        '200': {description: Tệp bằng chứng, headers: {Cache-Control: {schema: {type: string}, description: private, no-store}, X-Content-Type-Options: {schema: {type: string}, description: nosniff}}, content: {application/octet-stream: {schema: {type: string, format: binary}}}}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+
+  /report-exports:
+    post:
+      tags: [Reports]
+      operationId: createReportExport
+      summary: Tạo bản xuất đã che cho người nhận
+      x-use-cases: [UC-C05]
+      x-contract:
+        purpose: Phát hành immutable export với trace code và danh sách asset cố định.
+        actors: [SECURITY, OWNER, SCAN_OPS, REMEDIATOR, RISK_APPROVER, AUDITOR]
+        scope: report.export + quyền hiện hành trên mọi asset; task scope áp cho REMEDIATOR.
+        state: null→Issued sau khi file đã tạo; bảng hiện tại không có trạng thái job. Nội dung/danh sách asset bất biến sau phát hành.
+        transaction: Validate all assets and render masked file outside DB transaction; finalize private object; transaction inserts complete export/assets/token hash + audit; reconcile object if DB fails.
+        concurrency: Idempotency; same key same payload; no asset append after issuance.
+        audit: report.export.create with asset IDs/recipient, no token/content.
+        tests: [single/multi asset, one unauthorized asset, masking, duplicate, render failure, DB failure object reconciliation]
+      parameters: [{$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/ReportExportInput'}}}}
+      responses:
+        '201': {description: Export đã phát hành, content: {application/json: {schema: {$ref: '#/components/schemas/Resource'}}}}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '422': {$ref: '#/components/responses/Unprocessable'}
+  /report-exports/{exportId}:
+    get:
+      tags: [Reports]
+      operationId: getReportExport
+      summary: Xem metadata export
+      x-use-cases: [UC-C05]
+      x-contract:
+        purpose: Theo dõi trace code, hạn và trạng thái suy ra từ revoked_at/expiry; không trả token hash/object key.
+        actors: [SECURITY, OWNER, SCAN_OPS, REMEDIATOR, RISK_APPROVER, AUDITOR]
+        scope: report.download + quyền hiện hành trên mọi asset trong export.
+        state: Không đổi.
+        transaction: Read-only after all-asset authorization.
+        concurrency: ETag metadata.
+        audit: Denied audit.
+        tests: [all asset rights, revoked one asset, no secret metadata]
+      parameters: [{$ref: '#/components/parameters/ExportId'}, {$ref: '#/components/parameters/DownloadToken'}]
+      responses:
+        '200': {description: Metadata export, content: {application/json: {schema: {$ref: '#/components/schemas/Resource'}}}}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /report-exports/{exportId}/content:
+    get:
+      tags: [Reports]
+      operationId: downloadReportExport
+      summary: Stream export còn hiệu lực
+      x-use-cases: [UC-C05, UC-C07]
+      x-contract:
+        purpose: Tải file qua API sau kiểm người nhận, token nếu dùng, expiry/revoke và quyền hiện hành.
+        actors: [SECURITY, OWNER, SCAN_OPS, REMEDIATOR, RISK_APPROVER, AUDITOR]
+        scope: report.download + exact recipient + all asset rights; link/token không thay quyền.
+        state: Không đổi; expired/revoked trả 410.
+        transaction: Authorize then audit access before private object stream; checksum verification.
+        concurrency: no-store; each download reauthorizes.
+        audit: report.download every outcome, no content/token.
+        tests: [recipient, token hash, revoked, expired, one asset revoked, checksum]
+      parameters: [{$ref: '#/components/parameters/ExportId'}]
+      responses:
+        '200': {description: File xuất, content: {application/octet-stream: {schema: {type: string, format: binary}}}}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '410': {$ref: '#/components/responses/Gone'}
+  /report-exports/{exportId}/revoke:
+    post:
+      tags: [Reports]
+      operationId: revokeReportExport
+      summary: Thu hồi export/link tải
+      x-use-cases: [UC-C10]
+      x-contract:
+        purpose: Chặn tải tiếp theo mà không sửa/xóa nội dung lịch sử.
+        actors: [SECURITY, OWNER, SCAN_OPS, REMEDIATOR, RISK_APPROVER, AUDITOR]
+        scope: report.revoke + issuer/recipient/policy và quyền trên mọi asset.
+        state: Unrevoked→Revoked bằng revoked_by/revoked_at; bảng không có cột status; terminal/idempotent.
+        transaction: Lock export; set revoked_by/at; lưu reason trong audit đã che; commit.
+        concurrency: If-Match + idempotency.
+        audit: report.revoke.
+        tests: [issuer revoke, unauthorized, already revoked replay, stale]
+      parameters: [{$ref: '#/components/parameters/ExportId'}, {$ref: '#/components/parameters/IfMatch'}, {$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/ReasonInput'}}}}
+      responses:
+        '200': {description: Export đã thu hồi, content: {application/json: {schema: {$ref: '#/components/schemas/Resource'}}}}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '412': {$ref: '#/components/responses/PreconditionFailed'}
+
+  /audit-logs:
+    get:
+      tags: [Audit]
+      operationId: listAuditLogs
+      summary: Tra cứu audit theo quyền
+      x-use-cases: [UC-C03, UC-C06, UC-C07]
+      x-contract:
+        purpose: Tra cứu Permission hoặc Business audit; không có sửa/xóa.
+        actors: [ADMIN, SECURITY, AUDITOR]
+        scope: ADMIN/AUDITOR audit.permission.read; SECURITY/AUDITOR audit.business.read và asset scope; ADMIN không tự đọc business audit.
+        state: Không đổi.
+        transaction: Read-only category and asset filtered query.
+        concurrency: Cursor by occurred_at/id.
+        audit: Audit việc đọc audit nếu policy yêu cầu; denial luôn ghi mà không lặp vô hạn.
+        tests: [category separation, asset filter, admin business denied, cursor, masked before-after]
+      parameters: [{$ref: '#/components/parameters/PageAfter'}, {$ref: '#/components/parameters/PageSize'}, {name: category, in: query, schema: {type: string, enum: [Permission, Business]}}]
+      responses:
+        '200': {$ref: '#/components/responses/PagedResources'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /notifications:
+    get:
+      tags: [Notifications]
+      operationId: listNotifications
+      summary: Hộp thông báo của người dùng
+      x-use-cases: [UC-C08]
+      x-contract:
+        purpose: Trả thông báo tối thiểu của chính người nhận.
+        actors: [SECURITY, OWNER, SCAN_OPS, REMEDIATOR, RISK_APPROVER]
+        scope: recipient_id là current user và quyền asset hiện hành; revoked grant không lộ chi tiết.
+        state: Không đổi.
+        transaction: Read-only recipient-filtered query.
+        concurrency: Cursor by created_at/id.
+        audit: Không audit mỗi read; denial audit.
+        tests: [own only, revoked asset, no sensitive content, cursor]
+      parameters: [{$ref: '#/components/parameters/PageAfter'}, {$ref: '#/components/parameters/PageSize'}]
+      responses:
+        '200': {$ref: '#/components/responses/PagedResources'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+  /notifications/{notificationId}/read:
+    post:
+      tags: [Notifications]
+      operationId: markNotificationRead
+      summary: Đánh dấu thông báo đã đọc
+      x-use-cases: [UC-C08]
+      x-contract:
+        purpose: Ghi trạng thái đọc của chính người nhận.
+        actors: [authenticated recipient]
+        scope: notification.recipient_id=current user; không chấp nhận IDOR.
+        state: Unread→Read, idempotent.
+        transaction: Lock notification; set read_at once; commit.
+        concurrency: Idempotency; first timestamp preserved.
+        audit: Không cần business audit success; IDOR denial audit.
+        tests: [recipient, other recipient denied, repeat preserves timestamp]
+      parameters: [{$ref: '#/components/parameters/NotificationId'}, {$ref: '#/components/parameters/IdempotencyKey'}]
+      responses:
+        '200': {description: Đã đọc, content: {application/json: {schema: {$ref: '#/components/schemas/Resource'}}}}
+        '403': {$ref: '#/components/responses/Forbidden'}
+
+components:
+  securitySchemes:
+    oidc:
+      type: openIdConnect
+      openIdConnectUrl: https://idp.example.invalid/.well-known/openid-configuration
+      description: Placeholder cấu hình; issuer thực tế phải được đơn vị phê duyệt.
+  headers:
+    ETag:
+      description: Phiên bản tài nguyên dạng chuỗi có dấu nháy.
+      schema: {type: string, example: '"7"'}
+    CorrelationId:
+      description: UUID truy vết request/audit.
+      schema: {type: string, format: uuid}
+  parameters:
+    AssetId: {name: assetId, in: path, required: true, schema: {type: integer, format: int64, minimum: 1}}
+    ScopeId: {name: scopeId, in: path, required: true, schema: {type: integer, format: int64, minimum: 1}}
+    ScheduleId: {name: scheduleId, in: path, required: true, schema: {type: integer, format: int64, minimum: 1}}
+    ScanId: {name: scanId, in: path, required: true, schema: {type: integer, format: int64, minimum: 1}}
+    ImportId: {name: importId, in: path, required: true, schema: {type: integer, format: int64, minimum: 1}}
+    FindingId: {name: findingId, in: path, required: true, schema: {type: integer, format: int64, minimum: 1}}
+    ReviewId: {name: reviewId, in: path, required: true, schema: {type: integer, format: int64, minimum: 1}}
+    TicketId: {name: ticketId, in: path, required: true, schema: {type: integer, format: int64, minimum: 1}}
+    VerificationRequestId: {name: verificationRequestId, in: path, required: true, schema: {type: integer, format: int64, minimum: 1}}
+    EvidenceId: {name: evidenceId, in: path, required: true, schema: {type: integer, format: int64, minimum: 1}}
+    RiskAcceptanceId: {name: riskAcceptanceId, in: path, required: true, schema: {type: integer, format: int64, minimum: 1}}
+    ExportId: {name: exportId, in: path, required: true, schema: {type: integer, format: int64, minimum: 1}}
+    GrantId: {name: grantId, in: path, required: true, schema: {type: integer, format: int64, minimum: 1}}
+    NotificationId: {name: notificationId, in: path, required: true, schema: {type: integer, format: int64, minimum: 1}}
+    IfMatch: {name: If-Match, in: header, required: true, schema: {type: string, pattern: '^"[^"\\r\\n]+"$'}, description: Strong opaque ETag; Finding normally uses its numeric row_version.}
+    IdempotencyKey: {name: Idempotency-Key, in: header, required: true, schema: {type: string, minLength: 16, maxLength: 128}}
+    AccessReason: {name: X-Access-Reason, in: header, required: true, schema: {type: string, minLength: 3, maxLength: 500}}
+    DownloadToken: {name: X-Download-Token, in: header, required: false, schema: {type: string, minLength: 32, maxLength: 512}, description: Token ngẫu nhiên khi luồng phát hành yêu cầu; không log và không thay thế authorization.}
+    PageAfter: {name: 'page[after]', in: query, required: false, schema: {type: string, maxLength: 2048}}
+    PageSize: {name: 'page[size]', in: query, required: false, schema: {type: integer, minimum: 1, maximum: 200, default: 50}}
+  responses:
+    PagedResources: {description: Trang dữ liệu đã lọc, headers: {X-Correlation-ID: {$ref: '#/components/headers/CorrelationId'}}, content: {application/json: {schema: {$ref: '#/components/schemas/PagedResources'}}}}
+    Unauthorized: {description: Chưa xác thực, content: {application/problem+json: {schema: {$ref: '#/components/schemas/Problem'}}}}
+    Forbidden: {description: Không đủ quyền/phạm vi, content: {application/problem+json: {schema: {$ref: '#/components/schemas/Problem'}}}}
+    NotFound: {description: Không tìm thấy trong phạm vi, content: {application/problem+json: {schema: {$ref: '#/components/schemas/Problem'}}}}
+    Gone: {description: Đã hết hạn/thu hồi, content: {application/problem+json: {schema: {$ref: '#/components/schemas/Problem'}}}}
+    Conflict: {description: Trùng hoặc sai trạng thái, content: {application/problem+json: {schema: {$ref: '#/components/schemas/Problem'}}}}
+    PreconditionFailed: {description: ETag/row version cũ, content: {application/problem+json: {schema: {$ref: '#/components/schemas/Problem'}}}}
+    Unprocessable: {description: Vi phạm quy tắc nghiệp vụ, content: {application/problem+json: {schema: {$ref: '#/components/schemas/Problem'}}}}
+    PayloadTooLarge: {description: Vượt giới hạn cấu hình, content: {application/problem+json: {schema: {$ref: '#/components/schemas/Problem'}}}}
+    UnsupportedMedia: {description: Định dạng không hỗ trợ, content: {application/problem+json: {schema: {$ref: '#/components/schemas/Problem'}}}}
+    Unavailable: {description: Phụ thuộc tạm lỗi hoặc audit bắt buộc không ghi được, headers: {Retry-After: {schema: {type: integer}}}, content: {application/problem+json: {schema: {$ref: '#/components/schemas/Problem'}}}}
+  schemas:
+    Problem:
+      type: object
+      required: [type, title, status, code, correlationId, retryable]
+      properties:
+        type: {type: string, format: uri-reference}
+        title: {type: string}
+        status: {type: integer, minimum: 400, maximum: 599}
+        code: {type: string, pattern: '^[A-Z]+-[0-9]{3}$'}
+        detail: {type: string}
+        correlationId: {type: string, format: uuid}
+        retryable: {type: boolean}
+        errors: {type: array, items: {type: object, properties: {field: {type: string}, code: {type: string}}}}
+    Resource:
+      type: object
+      required: [id, version]
+      properties:
+        id: {type: integer, format: int64}
+        version: {type: string, description: Opaque representation version used to form ETag; Finding derives it from row_version.}
+        status: {type: string}
+        links: {type: object, additionalProperties: {type: string, format: uri-reference}}
+      additionalProperties: true
+    PagedResources:
+      type: object
+      required: [items, page]
+      properties:
+        items: {type: array, items: {$ref: '#/components/schemas/Resource'}}
+        page:
+          type: object
+          required: [size]
+          properties: {size: {type: integer}, next: {type: [string, 'null']}}
+    UserContext:
+      type: object
+      required: [userId, displayName, grants]
+      properties:
+        userId: {type: integer, format: int64}
+        displayName: {type: string}
+        grants: {type: array, items: {type: object, required: [role, permissions], properties: {role: {type: string}, assetId: {type: [integer, 'null'], format: int64}, permissions: {type: array, items: {type: string}}, canReadRawReport: {type: boolean}, canReadSensitiveEvidence: {type: boolean}}}}
+    AssetCreate:
+      type: object
+      required: [code, name, domain, baseUrl, environment]
+      properties: {code: {type: string, minLength: 1, maxLength: 40}, name: {type: string, minLength: 1, maxLength: 300}, domain: {type: string, minLength: 1, maxLength: 253}, baseUrl: {type: string, format: uri}, environment: {type: string, minLength: 1, maxLength: 100}, ownerId: {type: [integer, 'null'], format: int64}, technicalTeamId: {type: [integer, 'null'], format: int64}, securityOfficerId: {type: [integer, 'null'], format: int64}, criticality: {type: [string, 'null']}, dataClassification: {type: [string, 'null']}, internetExposed: {type: [boolean, 'null']}, unitName: {type: [string, 'null']}}
+      additionalProperties: false
+    AssetUpdate:
+      type: object
+      properties: {name: {type: string, minLength: 1, maxLength: 300}, domain: {type: string, minLength: 1, maxLength: 253}, baseUrl: {type: string, format: uri}, environment: {type: string, minLength: 1, maxLength: 100}, ownerId: {type: [integer, 'null'], format: int64}, technicalTeamId: {type: [integer, 'null'], format: int64}, securityOfficerId: {type: [integer, 'null'], format: int64}, criticality: {type: [string, 'null']}, dataClassification: {type: [string, 'null']}, internetExposed: {type: [boolean, 'null']}, unitName: {type: [string, 'null']}}
+      additionalProperties: false
+    Asset:
+      allOf:
+        - {$ref: '#/components/schemas/Resource'}
+        - {type: object, required: [code, name, status], properties: {code: {type: string}, name: {type: string}, baseUrlMasked: {type: string}, status: {type: string, enum: [Draft, Pending Approval, Active, Suspended, Retired]}, currentScopeId: {type: [integer, 'null'], format: int64}}}
+    AccessGrantInput:
+      type: object
+      required: [userId, roleCode]
+      properties: {userId: {type: integer, format: int64}, roleCode: {type: string, enum: [ADMIN, SECURITY, OWNER, SCAN_OPS, REMEDIATOR, RISK_APPROVER, AUDITOR]}, assetId: {type: [integer, 'null'], format: int64}, canReadRawReport: {type: boolean, default: false}, canReadSensitiveEvidence: {type: boolean, default: false}, sensitiveReason: {type: [string, 'null'], maxLength: 500}}
+      additionalProperties: false
+    ReasonInput:
+      type: object
+      required: [reason]
+      properties: {reason: {type: string, minLength: 1, maxLength: 2000}}
+      additionalProperties: false
+    DecisionInput:
+      type: object
+      required: [decision, reason]
+      properties: {decision: {type: string, enum: [Approve, Reject]}, reason: {type: string, minLength: 1, maxLength: 2000}}
+      additionalProperties: false
+    TransitionInput:
+      type: object
+      required: [toStatus, reason]
+      properties: {toStatus: {type: string}, reason: {type: string, minLength: 1, maxLength: 2000}}
+      additionalProperties: false
+    ScopeRevisionInput:
+      type: object
+      required: [rules, windows]
+      properties:
+        baseRevisionId: {type: [integer, 'null'], format: int64}
+        rules: {type: array, minItems: 1, maxItems: 10000, items: {type: object, required: [kind, pattern], properties: {kind: {type: string, enum: [Include, Exclude]}, pattern: {type: string, minLength: 1, maxLength: 2000}}, additionalProperties: false}}
+        windows: {type: array, minItems: 1, items: {type: object, required: [timezone, daysOfWeek, startTime, endTime], properties: {timezone: {type: string}, daysOfWeek: {type: array, minItems: 1, uniqueItems: true, items: {type: integer, minimum: 1, maximum: 7}}, startTime: {type: string, format: time}, endTime: {type: string, format: time}}, additionalProperties: false}}
+      additionalProperties: false
+    ScheduleInput:
+      type: object
+      required: [code, name, scopeId, frequency, recurrence, timezone, effectiveFrom, nextDueAt, plannedDurationMinutes, operationsTeamId, targetUrls]
+      properties: {code: {type: string, minLength: 1, maxLength: 40}, name: {type: string, minLength: 1, maxLength: 300}, scopeId: {type: integer, format: int64}, frequency: {type: string, enum: [Daily, Weekly, Monthly, Custom]}, recurrence: {type: string, minLength: 1, maxLength: 1000}, timezone: {type: string}, effectiveFrom: {type: string, format: date-time}, effectiveUntil: {type: [string, 'null'], format: date-time}, nextDueAt: {type: string, format: date-time}, plannedDurationMinutes: {type: integer, minimum: 1}, operationsTeamId: {type: integer, format: int64}, targetUrls: {type: array, minItems: 1, uniqueItems: true, items: {type: string, format: uri}}, zapConfigNote: {type: [string, 'null'], maxLength: 4000}}
+      additionalProperties: false
+    ScanOccurrenceInput:
+      type: object
+      required: [plannedAt, plannedEndAt, targetUrls]
+      properties: {plannedAt: {type: string, format: date-time}, plannedEndAt: {type: string, format: date-time}, targetUrls: {type: array, minItems: 1, uniqueItems: true, items: {type: string, format: uri}}, configSnapshotMasked: {type: [string, 'null'], maxLength: 4000}}
+      additionalProperties: false
+    ScanTransitionInput:
+      allOf:
+        - {$ref: '#/components/schemas/TransitionInput'}
+        - {type: object, properties: {startedAt: {type: string, format: date-time}, completedAt: {type: string, format: date-time}}}
+    ImportBatch:
+      allOf:
+        - {$ref: '#/components/schemas/Resource'}
+        - {type: object, required: [assetId, scanId, format, status, counts], properties: {assetId: {type: integer, format: int64}, scanId: {type: integer, format: int64}, format: {type: string, enum: [Traditional JSON, Traditional XML]}, status: {type: string, enum: [Received, Validating, Processing, Completed, Partially Completed, Rejected, Failed]}, counts: {type: object, properties: {total: {type: integer}, succeeded: {type: integer}, failed: {type: integer}}}}}
+    Finding:
+      allOf:
+        - {$ref: '#/components/schemas/Resource'}
+        - {type: object, required: [assetId, code, status], properties: {assetId: {type: integer, format: int64}, code: {type: string}, titleMasked: {type: string}, sourceRisk: {type: [string, 'null']}, sourceConfidence: {type: [string, 'null']}, finalSeverity: {type: [string, 'null']}, status: {type: string, enum: [New, Triaged, Assigned, In Progress, Pending Verification, Closed, Reopened, False Positive, Pending Risk Acceptance, Risk Accepted, Cancelled]}}}
+    FindingReviewInput:
+      type: object
+      required: [kind, reason]
+      properties: {kind: {type: string, enum: [Severity, False Positive, Cancelled, Recheck]}, proposedSeverity: {type: [string, 'null'], enum: [Informational, Low, Medium, High, Critical, null]}, reason: {type: string, minLength: 1, maxLength: 4000}, contextMasked: {type: [string, 'null'], maxLength: 8000}, evidenceId: {type: [integer, 'null'], format: int64}}
+      additionalProperties: false
+    ImpactConfirmationInput:
+      type: object
+      required: [contextMasked]
+      properties: {contextMasked: {type: string, minLength: 1, maxLength: 8000}}
+      additionalProperties: false
+    TicketEventInput:
+      type: object
+      required: [eventType, previousEventId, reason]
+      properties: {eventType: {type: string, enum: [Assignment, Progress, Deadline]}, previousEventId: {type: [integer, 'null'], format: int64}, assigneeId: {type: [integer, 'null'], format: int64}, teamId: {type: [integer, 'null'], format: int64}, dueAt: {type: [string, 'null'], format: date-time}, slaRuleId: {type: [integer, 'null'], format: int64}, progressPercent: {type: [integer, 'null'], minimum: 0, maximum: 100}, remediationMasked: {type: [string, 'null'], maxLength: 8000}, evidenceId: {type: [integer, 'null'], format: int64}, reason: {type: string, minLength: 1, maxLength: 2000}}
+      additionalProperties: false
+    VerificationRequestInput:
+      type: object
+      required: [ticketEventId, operationsTeamId, scopeNote]
+      properties: {ticketEventId: {type: integer, format: int64}, operationsTeamId: {type: integer, format: int64}, scopeNote: {type: string, minLength: 1, maxLength: 4000}}
+      additionalProperties: false
+    VerificationDecisionInput:
+      type: object
+      required: [scanId, importId, outcome, isValid, coverageConfirmed, fingerprintPresent, reason]
+      properties: {scanId: {type: integer, format: int64}, importId: {type: integer, format: int64}, outcome: {type: string, enum: [Closed, Reopened]}, isValid: {type: boolean}, coverageConfirmed: {type: boolean}, fingerprintPresent: {type: boolean}, reason: {type: string, minLength: 1, maxLength: 4000}, evidenceId: {type: [integer, 'null'], format: int64}}
+      additionalProperties: false
+    RiskAcceptanceInput:
+      type: object
+      required: [reasonMasked, impactMasked, mitigationMasked, responsibleUserId, proposedUntil]
+      properties: {reasonMasked: {type: string, minLength: 1, maxLength: 8000}, impactMasked: {type: string, minLength: 1, maxLength: 8000}, mitigationMasked: {type: string, minLength: 1, maxLength: 8000}, responsibleUserId: {type: integer, format: int64}, proposedUntil: {type: string, format: date-time}}
+      additionalProperties: false
+    RiskAcceptancePatch:
+      type: object
+      minProperties: 1
+      properties: {reasonMasked: {type: string, minLength: 1, maxLength: 8000}, impactMasked: {type: string, minLength: 1, maxLength: 8000}, mitigationMasked: {type: string, minLength: 1, maxLength: 8000}, responsibleUserId: {type: integer, format: int64}, proposedUntil: {type: string, format: date-time}}
+      additionalProperties: false
+    RiskDecisionInput:
+      type: object
+      oneOf:
+        - type: object
+          required: [decision, reason]
+          properties: {decision: {const: Needs Information}, reason: {type: string, minLength: 1, maxLength: 4000}}
+          additionalProperties: false
+        - type: object
+          required: [decision, reason, authorityRef, conditionsMasked, validFrom, validUntil]
+          properties: {decision: {const: Approve}, reason: {type: string, minLength: 1, maxLength: 4000}, authorityRef: {type: string, minLength: 1, maxLength: 500}, conditionsMasked: {type: string, minLength: 1, maxLength: 8000}, validFrom: {type: string, format: date-time}, validUntil: {type: string, format: date-time}}
+          additionalProperties: false
+        - type: object
+          required: [decision, reason, authorityRef]
+          properties: {decision: {const: Reject}, reason: {type: string, minLength: 1, maxLength: 4000}, authorityRef: {type: string, minLength: 1, maxLength: 500}}
+          additionalProperties: false
+    ReportExportInput:
+      type: object
+      required: [assetIds, recipientUserId, reportType, format, maskingPolicyRef, expiresAt]
+      properties: {assetIds: {type: array, minItems: 1, uniqueItems: true, items: {type: integer, format: int64}}, recipientUserId: {type: integer, format: int64}, reportType: {type: string, minLength: 1, maxLength: 200}, format: {type: string, enum: [PDF, CSV]}, maskingPolicyRef: {type: string, minLength: 1, maxLength: 500}, expiresAt: {type: string, format: date-time}, filters: {type: object, additionalProperties: true}}
+      additionalProperties: false

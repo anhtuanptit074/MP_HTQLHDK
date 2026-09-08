@@ -1,0 +1,32 @@
+@startuml
+title HTQLHDK - System context
+left to right direction
+skinparam shadowing false
+skinparam componentStyle rectangle
+
+actor "Nguoi dung\n7 vai tro" as User
+actor "SCAN_OPS" as Ops
+rectangle "He thong quan ly quet\nlo hong website dinh ky" as System
+cloud "IdP cua don vi\nOIDC" as IdP
+rectangle "OWASP ZAP\nben ngoai" as ZAP
+database "PostgreSQL 17" as DB
+storage "Kho object private\nraw/evidence/export" as OBJ
+rectangle "KMS / Secrets Manager" as KMS
+rectangle "Telemetry da loc" as OBS
+
+User --> System : HTTPS / Web UI
+System --> IdP : OIDC
+Ops --> ZAP : Chay quet ben ngoai
+ZAP --> Ops : Traditional JSON/XML
+Ops --> System : Upload report
+System --> DB : Du lieu + workflow + audit
+System --> OBJ : Tep ma hoa
+System --> KMS : Secret / key operation
+System --> OBS : Log, metric, trace an toan
+
+note bottom of ZAP
+System KHONG khoi chay, dung
+hoac dieu khien ZAP
+end note
+@enduml
+

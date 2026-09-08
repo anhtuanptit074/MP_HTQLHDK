@@ -1,0 +1,49 @@
+@startuml
+title HTQLHDK - Provider-neutral deployment
+top to bottom direction
+skinparam shadowing false
+skinparam componentStyle rectangle
+
+node "Client zone" {
+  artifact "Browser" as B
+}
+node "Edge / DMZ" {
+  component "Reverse proxy / WAF\nTLS, rate and size limit" as EDGE
+}
+node "Private application zone" {
+  component "Static Web" as WEB
+  component "API replicas\nnon-root OCI" as API
+  component "Worker replicas\nno public ingress" as WORKER
+}
+node "Private data zone" {
+  database "PostgreSQL 17\nsingle primary (+ standby if approved)" as PG
+  storage "Private object storage\nKMS encrypted + versioned" as OS
+}
+node "Security / management zone" {
+  component "IdP" as IDP
+  component "KMS / Secrets" as KMS
+  component "Telemetry" as TEL
+  storage "Encrypted immutable backup target" as BAK
+}
+
+B --> EDGE : HTTPS
+EDGE --> WEB : static assets
+EDGE --> API : trusted proxy traffic
+API --> PG : TLS / api + audit roles
+WORKER --> PG : TLS / worker + audit roles
+API --> OS : private endpoint
+WORKER --> OS : private endpoint
+API --> IDP : allowlisted OIDC
+API --> KMS : workload identity
+WORKER --> KMS : workload identity
+API --> TEL : filtered telemetry
+WORKER --> TEL : filtered telemetry
+PG --> BAK : base backup + WAL
+OS --> BAK : versions / inventory / replication
+
+note right of WORKER
+Import worker khong co egress
+toi website trong report ZAP.
+end note
+@enduml
+

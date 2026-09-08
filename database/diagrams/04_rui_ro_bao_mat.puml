@@ -1,0 +1,86 @@
+@startuml
+hide circle
+skinparam linetype polyline
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+skinparam classBackgroundColor #EFF6FF
+skinparam classBorderColor #334155
+skinparam ArrowColor #64748B
+skinparam nodesep 50
+skinparam ranksep 70
+left to right direction
+title HTQLHDK 2.0 — 04 rui ro bao mat
+entity "Người dùng\napp_user" as app_user {
+  * id : bigint <<PK>>
+}
+entity "Tài sản website\nasset" as asset {
+  * id : bigint <<PK, FK>>
+  * code : varchar 
+  owner_id : bigint <<FK>>
+  technical_team_id : bigint <<FK>>
+  security_officer_id : bigint <<FK>>
+  * status : asset_status 
+  current_scope_id : bigint <<FK>>
+}
+entity "Phát hiện chuẩn hóa\nfinding" as finding {
+  * id : bigint <<PK, FK>>
+  * code : varchar 
+  * asset_id : bigint <<FK>>
+  * fingerprint : varchar 
+  * status : finding_status 
+  current_review_id : bigint <<FK>>
+  verification_result_id : bigint <<FK>>
+}
+entity "Hồ sơ đề nghị và quyết định chấp nhận rủi ro\nrisk_acceptance" as risk_acceptance {
+  * id : bigint <<PK>>
+  * finding_id : bigint <<FK>>
+  renewal_of_id : bigint <<FK>>
+  * responsible_user_id : bigint <<FK>>
+  * status : text 
+  valid_until : timestamptz 
+}
+entity "Nhật ký chung, lịch sử workflow và thay đổi hồ sơ\naudit_log" as audit_log {
+  * id : bigint <<PK>>
+  actor_id : bigint <<FK>>
+  asset_id : bigint <<FK>>
+  finding_id : bigint <<FK>>
+  evidence_id : bigint <<FK>>
+  verification_result_id : bigint <<FK>>
+  risk_acceptance_id : bigint <<FK>>
+  finding_review_id : bigint <<FK>>
+  trigger_occurrence_id : bigint <<FK>>
+}
+entity "Tệp xuất và liên kết tải có hạn\nreport_export" as report_export {
+  * id : bigint <<PK>>
+  * recipient_id : bigint <<FK>>
+  * token_hash : varchar 
+  * expires_at : timestamptz 
+}
+entity "Tài sản được đưa vào báo cáo xuất\nreport_export_asset" as report_export_asset {
+  * export_id : bigint <<PK, FK>>
+  * asset_id : bigint <<PK, FK>>
+}
+entity "Thông báo tối thiểu trong hệ thống\nnotification" as notification {
+  * id : bigint <<PK>>
+  * recipient_id : bigint <<FK>>
+  * asset_id : bigint <<FK>>
+  finding_id : bigint <<FK>>
+}
+app_user |o--o{ asset
+app_user |o--o{ asset
+asset ||--o{ finding
+finding ||--o{ risk_acceptance
+risk_acceptance |o--o{ risk_acceptance
+app_user ||--o{ risk_acceptance
+app_user |o--o{ audit_log
+asset |o--o{ audit_log
+finding |o--o{ audit_log
+risk_acceptance |o--o{ audit_log
+app_user ||--o{ report_export
+report_export ||--o{ report_export_asset
+asset ||--o{ report_export_asset
+app_user ||--o{ notification
+asset ||--o{ notification
+finding |o--o{ notification
+@enduml

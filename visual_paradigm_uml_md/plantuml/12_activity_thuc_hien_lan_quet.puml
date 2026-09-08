@@ -1,0 +1,60 @@
+@startuml
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam backgroundColor #FFFFFF
+skinparam ArrowColor #334155
+skinparam activityBackgroundColor #EFF6FF
+skinparam activityBorderColor #334155
+skinparam activityDiamondBackgroundColor #FFF7ED
+skinparam activityDiamondBorderColor #9A3412
+skinparam usecaseBackgroundColor #EFF6FF
+skinparam usecaseBorderColor #334155
+skinparam packageStyle rectangle
+skinparam maxMessageSize 70
+!pragma useVerticalIf on
+title AD-11 — Đến lịch và ghi nhận một lần quét bên ngoài
+|Hệ thống|
+start
+:Đọc lịch và thời điểm theo múi giờ đã lưu;
+if (Schedule Active và đã qua ngày kết thúc?) then (Có)
+  :Ghi nhận lịch Expired theo ngày kết thúc; audit;\nKhông tạo lần quét mới;
+  stop
+endif
+if (Schedule Active, Asset Active, scope đã duyệt,\nđến kỳ và thuộc khung giờ được phép?) then (Có)
+  :Tạo ScanOccurrence = Planned khi đến lịch;
+else (Không)
+  :Không tạo / không giao thực hiện lần quét;\nLịch còn hiệu lực được kiểm tra ở kỳ tiếp theo;
+  stop
+endif
+|Nhóm vận hành quét|
+:Xem lần quét Planned theo nhiệm vụ;
+if (Có thực hiện đúng lịch?) then (Có)
+  :Cấu hình và chạy OWASP ZAP\nbên ngoài hệ thống quản lý;
+  if (Quét thành công?) then (Có)
+    :Gửi cập nhật Completed;\nXuất Traditional JSON / XML;
+    |Hệ thống|
+    :Kiểm tra quyền Ops; lưu Completed và audit;
+    |Nhóm vận hành quét|
+    :Tải báo cáo theo AD-04;\nResult Imported chỉ được ghi sau xử lý nhập;
+  else (Không)
+    :Gửi Failed và lý do lỗi vận hành;
+    |Hệ thống|
+    :Kiểm tra quyền và lý do bắt buộc;\nLưu Failed và audit;
+  endif
+else (Không)
+  :Gửi Missed và lý do bỏ lỡ;
+  |Hệ thống|
+  :Kiểm tra quyền và lý do bắt buộc;\nLưu Missed và audit; thông báo AD-16;
+endif
+|Hệ thống|
+:Giữ lịch sử; không tự chạy ZAP / lần thay thế;\nCác kỳ tiếp theo xử lý lại AD-11 nếu lịch còn đủ điều kiện;
+stop
+legend bottom
+K-01: Mọi thao tác người dùng phải kiểm tra quyền hiện hành + phạm vi phía máy chủ.
+Không đạt K-01: từ chối, ghi audit, không thực hiện bước đọc / ghi kế tiếp.
+K-02: Mọi thay đổi, phê duyệt, từ chối, lỗi và truy cập nhạy cảm theo nguồn 8.5 đều ghi audit.
+Audit: người, thời điểm, đối tượng, hành động, kết quả; trước / sau và bằng chứng khi có.
+Các lời gọi AD-xx phải bảo toàn tiền điều kiện, mọi nhánh lỗi và trạng thái đầu ra của AD được gọi.
+endlegend
+@enduml

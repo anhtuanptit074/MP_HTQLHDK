@@ -1,0 +1,34 @@
+sequenceDiagram
+    autonumber
+    actor Sec as Chuyên viên ATTT
+    actor Fix as Người khắc phục
+    participant UI as Giao diện
+    participant Svc as Dịch vụ khắc phục
+    participant DB as CSDL HTQLHDK
+    Sec->>UI: Tạo/liên kết phiếu và phân công
+    UI->>Svc: Finding, nhóm/người, hạn, SLA và lý do
+    Note over UI,DB: SD-00: ATTT； khóa asset/Finding/phiếu； kiểm phiên bản
+    Svc->>DB: Tìm phiếu phù hợp； đọc Final Severity và SLA hiệu lực
+    DB-->>Svc: Phiếu hiện có, current_event_id và quy tắc hạn
+    alt Thiếu người/hạn/SLA hoặc sai trạng thái
+    Svc-->>UI: Chưa phân công； yêu cầu bổ sung
+    else Đủ điều kiện
+    opt Chưa có phiếu phù hợp
+    Svc->>DB: Trong TX: tạo remediation_ticket
+    end
+    Svc->>DB: Trong TX: thêm Assignment snapshot； previous_event_id = con trỏ cũ
+    Svc->>DB: Cùng TX: đổi con trỏ； Triaged/Reopened thành Assigned + audit； COMMIT
+    Note over Svc,DB: SD-18: thông báo phiếu mới sau commit
+    end
+    Fix->>UI: Xác nhận tiếp nhận phiếu được giao
+    UI->>Svc: ticket_id và phiên bản hiện hành
+    Note over UI,DB: SD-00: đúng người/nhóm được giao； trạng thái Assigned
+    Svc->>DB: TX: sự kiện Progress tiếp nhận； con trỏ； In Progress + audit
+    opt ATTT điều chỉnh người hoặc thời hạn
+    Sec->>UI: Gửi thay đổi và lý do
+    UI->>Svc: Thông tin mới + current_event_id đã xem
+    Note over UI,DB: SD-00: khóa phiếu； kiểm con trỏ và SLA
+    Svc->>DB: TX: Assignment hoặc Deadline snapshot đầy đủ
+    Svc->>DB: Cùng TX: current_event_id + audit cũ/mới； COMMIT
+    end
+    Note over Svc,DB: Đổi người/hạn giữ nguyên tiến độ, bằng chứng, remediated_by và remediated_at

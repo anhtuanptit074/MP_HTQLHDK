@@ -1,0 +1,32 @@
+sequenceDiagram
+    autonumber
+    actor Admin as Quản trị viên
+    actor User as Người dùng
+    participant UI as Giao diện
+    participant Svc as Dịch vụ quản trị quyền
+    participant DB as CSDL HTQLHDK
+    Admin->>UI: Chọn gán, thay đổi hoặc thu hồi quyền
+    UI->>Svc: Người dùng, vai trò, asset, cờ nhạy cảm và lý do
+    Note over UI,DB: SD-00: kiểm access.manage và dữ liệu đầu vào
+    Svc->>DB: Đọc người dùng, tài sản và grant hiện hành
+    DB-->>Svc: Dữ liệu phân quyền
+    alt Sai vai trò hoặc quyền nhạy cảm không hợp lệ
+    Svc->>DB: Audit từ chối cấp quyền
+    Svc-->>UI: Trả lỗi； không cấp quyền
+    else Cấp quyền mới
+    Svc->>DB: TX: INSERT user_role với quyền tường minh + audit trước/sau
+    Svc-->>UI: Đã cấp quyền trong phạm vi
+    else Thay đổi quyền nhạy cảm
+    Svc->>DB: TX: thu hồi dòng cũ； INSERT dòng mới + lý do + audit
+    Svc-->>UI: Đã thay quyền； giữ lịch sử cấp/thu hồi
+    else Thu hồi
+    Svc->>DB: TX: revoked_by/at + audit； không DELETE
+    Svc-->>UI: Đã thu hồi quyền
+    end
+    User->>UI: Xem nhật ký thay đổi quyền
+    UI->>Svc: Bộ lọc nhật ký quyền
+    Note over UI,DB: SD-00: Admin/Auditor có audit.permission.read
+    Svc->>DB: Chỉ SELECT audit quyền trong phạm vi cho phép
+    DB-->>Svc: Người, hành động, thời điểm và trước/sau đã che
+    Svc-->>UI: Lịch sử quyền chỉ đọc
+    Note over Svc,DB: Mọi yêu cầu SD-01..SD-18 kiểm grant hiện hành； Admin không có quyền raw mặc định

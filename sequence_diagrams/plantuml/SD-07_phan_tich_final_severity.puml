@@ -1,0 +1,67 @@
+@startuml
+hide footbox
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 58
+skinparam BoxPadding 8
+skinparam ArrowColor #334155
+skinparam sequenceParticipantBackgroundColor #EAF2FB
+skinparam sequenceParticipantBorderColor #334155
+skinparam sequenceLifeLineBorderColor #94A3B8
+skinparam sequenceGroupBorderColor #64748B
+skinparam sequenceGroupHeaderFontColor #0F172A
+skinparam sequenceGroupBackgroundColor #F8FAFC
+skinparam sequenceReferenceBackgroundColor #EFF6FF
+skinparam sequenceReferenceBorderColor #93C5FD
+skinparam NoteBackgroundColor #FFF7E8
+skinparam NoteBorderColor #D9A441
+autonumber
+title SD-07 — Phân tích, xác nhận và điều chỉnh Final Severity
+actor "Chuyên viên ATTT" as Sec
+actor "Chủ tài sản" as Owner
+actor "Người rà soát độc lập" as Reviewer
+boundary "Giao diện" as UI
+control "Dịch vụ phân tích phát hiện" as Svc
+database "CSDL HTQLHDK" as DB
+Sec -> UI : Mở phát hiện và dữ liệu nguồn đã che
+UI -> Svc : Lấy Finding, nguồn và lịch sử đánh giá
+ref over UI,DB : SD-00: kiểm quyền ATTT; SD-15 đọc trong phạm vi
+Svc -> DB : Đọc Finding, Observation và current_review_id
+DB --> Svc : Source Risk, Confidence và Final Severity hiện hành
+Svc --> UI : Hiển thị tách ba loại thông tin
+opt Cần bổ sung ảnh hưởng nghiệp vụ
+  Owner -> UI : Xác nhận bối cảnh theo tài sản
+  UI -> Svc : Gửi thông tin ảnh hưởng
+  ref over UI,DB : SD-00: kiểm Owner đúng tài sản và ghi audit
+end
+Sec -> UI : Gửi mức đề nghị, lý do và bằng chứng
+UI -> Svc : Đề nghị đánh giá cùng phiên bản đã đọc
+ref over UI,DB : SD-00: kiểm quyền; không tự xác nhận kết quả mình nhập
+Svc -> DB : TX: finding_review Severity, Proposed, previous_review_id + audit
+alt Hạ Critical/High hoặc chính sách yêu cầu người thứ hai
+  Svc --> UI : Chờ rà soát; giữ mức và trạng thái hiện hành
+  Reviewer -> UI : Chấp thuận hoặc từ chối, kèm căn cứ
+  UI -> Svc : Quyết định rà soát
+  ref over UI,DB : SD-00: người khác người đánh giá; đúng review.second và thẩm quyền
+  Svc -> DB : TX: lưu người, thời điểm, kết luận rà soát + audit
+end
+alt Đủ điều kiện áp dụng; rà soát đã chấp thuận nếu bắt buộc
+  Svc -> DB : BEGIN; khóa asset/Finding/phiếu; kiểm con trỏ và phiên bản
+  alt Đề nghị còn phù hợp và có SLA nếu cần đổi hạn
+    Svc -> DB : Review Applied; Finding.current_review_id; New thành Triaged nếu có
+    opt Có phiếu và cần đổi hạn theo mức mới
+      Svc -> DB : Thêm ticket_event Deadline đầy đủ; cập nhật current_event_id
+    end
+    Svc -> DB : Cùng TX: audit mức/hạn/trạng thái; COMMIT
+    Svc --> UI : Mức cuối và hạn mới có hiệu lực
+  else Đề nghị đã cũ hoặc thiếu điều kiện
+    Svc -> DB : ROLLBACK; audit từ chối riêng
+    Svc --> UI : Yêu cầu rà soát lại; giữ kết quả hiện hành
+  end
+else Bị từ chối hoặc còn chờ
+  Svc --> UI : Chưa áp dụng; hiển thị kết quả rà soát
+end
+@enduml

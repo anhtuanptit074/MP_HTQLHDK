@@ -1,0 +1,101 @@
+erDiagram
+    scan_occurrence {
+        bigint id PK
+        varchar code
+        bigint asset_id FK
+        bigint scope_id FK
+        bigint schedule_id FK
+        bigint operations_team_id FK
+        scan_status status
+        text_array target_urls
+    }
+    import_batch {
+        bigint id PK
+        varchar code
+        bigint asset_id FK
+        bigint scan_id FK
+        varchar file_sha256
+        import_status status
+        text raw_object_key
+    }
+    finding {
+        bigint id PK, FK
+        varchar code
+        bigint asset_id FK
+        varchar fingerprint
+        finding_status status
+        bigint current_review_id FK
+        bigint verification_result_id FK
+    }
+    evidence {
+        bigint id PK
+        bigint finding_id FK
+    }
+    finding_review {
+        bigint id PK
+        bigint finding_id FK
+        text review_kind
+        text status
+        bigint previous_review_id FK
+        final_severity proposed_severity
+        bigint evidence_id FK
+        bigint trigger_occurrence_id FK
+    }
+    sla_rule {
+        bigint id PK
+        final_severity severity
+    }
+    remediation_ticket {
+        bigint id PK, FK
+        varchar code
+        bigint finding_id FK
+        bigint current_event_id FK
+    }
+    ticket_event {
+        bigint id PK
+        bigint ticket_id FK
+        bigint finding_id FK
+        bigint previous_event_id FK
+        bigint team_id FK
+        bigint assignee_id FK
+        timestamptz due_at
+        bigint sla_rule_id FK
+        bigint evidence_id FK
+    }
+    verification_request {
+        bigint id PK
+        bigint asset_id FK
+        bigint finding_id FK
+        bigint ticket_id FK
+        bigint scope_id FK
+        bigint remediation_event_id FK
+        bigint operations_team_id FK
+        text status
+    }
+    verification_result {
+        bigint id PK
+        bigint request_id FK
+        bigint finding_id FK
+        bigint asset_id FK
+        bigint scan_id FK
+        bigint batch_id FK
+    }
+    scan_occurrence ||--o{ import_batch : "scan_id"
+    finding_review |o--o| finding : "current_review_id"
+    verification_result |o--o| finding : "verification_result_id"
+    finding ||--o{ evidence : "finding_id"
+    finding ||--o{ finding_review : "finding_id"
+    finding_review |o--o{ finding_review : "previous_review_id"
+    evidence |o--o{ finding_review : "evidence_id"
+    finding ||--o{ remediation_ticket : "finding_id"
+    ticket_event |o--o| remediation_ticket : "current_event_id"
+    remediation_ticket ||--o{ ticket_event : "ticket_id"
+    ticket_event |o--o{ ticket_event : "previous_event_id"
+    sla_rule |o--o{ ticket_event : "sla_rule_id"
+    evidence |o--o{ ticket_event : "evidence_id"
+    finding ||--o{ verification_request : "finding_id"
+    remediation_ticket ||--o{ verification_request : "ticket_id"
+    ticket_event ||--o{ verification_request : "remediation_event_id"
+    verification_request ||--o{ verification_result : "request_id"
+    scan_occurrence ||--o{ verification_result : "scan_id"
+    import_batch |o--o{ verification_result : "batch_id"

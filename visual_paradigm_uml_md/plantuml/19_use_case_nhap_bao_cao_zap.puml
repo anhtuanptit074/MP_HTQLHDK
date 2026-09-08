@@ -1,0 +1,59 @@
+@startuml
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam backgroundColor #FFFFFF
+skinparam ArrowColor #334155
+skinparam activityBackgroundColor #EFF6FF
+skinparam activityBorderColor #334155
+skinparam activityDiamondBackgroundColor #FFF7ED
+skinparam activityDiamondBorderColor #9A3412
+skinparam usecaseBackgroundColor #EFF6FF
+skinparam usecaseBorderColor #334155
+skinparam packageStyle rectangle
+skinparam maxMessageSize 70
+left to right direction
+title UC-02 — Nhập báo cáo ZAP
+actor "Chuyên viên ATTT" as Security
+actor "Chủ sở hữu tài sản" as Owner
+actor "Nhóm vận hành quét" as Ops
+actor "Nhóm khắc phục kỹ thuật" as Fix
+actor "Người phê duyệt rủi ro" as Risk
+actor "Kiểm toán viên" as Auditor
+rectangle "Hệ thống quản lý quét lỗ hổng website định kỳ" {
+  usecase "UC-I01\nNhập báo cáo ZAP" as UC_I01
+  usecase "UC-I02\nKiểm tra quyền nhập\n(nội bộ)" as UC_I02
+  usecase "UC-I03\nKiểm tra tài sản và lần\nquét\n(nội bộ)" as UC_I03
+  usecase "UC-I04\nKiểm tra định dạng báo cáo\n(nội bộ)" as UC_I04
+  usecase "UC-I05\nKiểm tra phạm vi URL\n(nội bộ)" as UC_I05
+  usecase "UC-I06\nLưu báo cáo gốc bất biến\n(nội bộ)" as UC_I06
+  usecase "UC-I07\nChe dữ liệu nhạy cảm\n(nội bộ)" as UC_I07
+  usecase "UC-I08\nChuẩn hóa dữ liệu ZAP\n(nội bộ)" as UC_I08
+  usecase "UC-I09\nChống nhập trùng\n(nội bộ)" as UC_I09
+  usecase "UC-I10\nTạo hoặc cập nhật phát hiện\n(nội bộ)" as UC_I10
+  usecase "UC-I11\nGhi nhận lỗi nhập\n(nội bộ)" as UC_I11
+  usecase "UC-I12\nXem kết quả lô nhập" as UC_I12
+}
+Ops --- UC_I01
+Ops --- UC_I12
+Security --- UC_I12
+Owner --- UC_I12
+UC_I12 --- Fix
+UC_I12 --- Risk
+UC_I12 --- Auditor
+UC_I01 ...> UC_I02 : <<include>>
+UC_I01 ...> UC_I03 : <<include>>
+UC_I01 ...> UC_I04 : <<include>>
+UC_I01 ...> UC_I05 : <<include>>
+UC_I01 ...> UC_I06 : <<include>>
+UC_I01 ...> UC_I07 : <<include>>
+UC_I01 ...> UC_I08 : <<include>>
+UC_I01 ...> UC_I09 : <<include>>
+UC_I01 ...> UC_I10 : <<include>>
+UC_I11 ...> UC_I01 : <<extend>>\n[lỗi nhập]
+legend bottom
+Nguồn 5.3, 7.6. UC-I02 đến UC-I11 là hành vi nội bộ, không có actor Hệ thống.
+Include phân rã hành vi nhập; nhánh lỗi / trùng kết thúc theo AD-04, không chạy các bước còn lại.
+Chỉ tải Traditional JSON/XML; ZAP chạy bên ngoài. Không có API nhận kết quả quét.
+endlegend
+@enduml

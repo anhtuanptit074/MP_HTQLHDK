@@ -1,0 +1,29 @@
+sequenceDiagram
+    autonumber
+    actor Clock as Sự kiện thời gian
+    actor Sec as Chuyên viên ATTT
+    participant UI as Giao diện
+    participant Svc as Dịch vụ xử lý rủi ro
+    participant DB as CSDL HTQLHDK
+    alt Kiểm tra theo thời gian
+    Clock->>Svc: Kiểm các quyết định đến hạn
+    else ATTT xác nhận vi phạm điều kiện hoặc rủi ro tăng
+    Sec->>UI: Gửi sự kiện và căn cứ
+    UI->>Svc: Finding, quyết định và lý do
+    Note over UI,DB: SD-00: ATTT và bằng chứng đúng phạm vi
+    end
+    Svc->>DB: BEGIN； khóa asset/Finding； đọc quyết định đã áp dụng mới nhất
+    DB-->>Svc: Trạng thái Finding, decision_id, hạn và điều kiện
+    alt Không còn Risk Accepted hoặc sự kiện của quyết định cũ
+    Svc->>DB: Kết thúc TX； không chuyển trạng thái
+    else Xét đúng quyết định hiện hành
+    Svc->>Svc: Kiểm hết hạn hoặc căn cứ vi phạm/rủi ro tăng
+    alt Đã hết điều kiện
+    Svc->>DB: TX: Finding Reopened + audit trỏ risk_acceptance_id； COMMIT
+    Note over Svc,DB: SD-18: thông báo cho người có nhiệm vụ
+    Svc-->>UI: Nếu là yêu cầu người dùng: mở lại để SD-09 phân công
+    else Còn đủ điều kiện
+    Svc->>DB: Kết thúc TX； giữ Risk Accepted
+    end
+    end
+    Note over Svc,DB: Gia hạn đang chờ không kéo dài hạn； thao tác áp dụng vẫn kiểm thời gian thực

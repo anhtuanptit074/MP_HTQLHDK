@@ -1,0 +1,67 @@
+@startuml
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam backgroundColor #FFFFFF
+skinparam ArrowColor #334155
+skinparam activityBackgroundColor #EFF6FF
+skinparam activityBorderColor #334155
+skinparam activityDiamondBackgroundColor #FFF7ED
+skinparam activityDiamondBorderColor #9A3412
+skinparam usecaseBackgroundColor #EFF6FF
+skinparam usecaseBorderColor #334155
+skinparam packageStyle rectangle
+skinparam maxMessageSize 70
+!pragma useVerticalIf on
+title AD-13 — Gia hạn bằng quyết định rủi ro mới
+|Chủ sở hữu / ATTT|
+start
+:Đề nghị gia hạn, dẫn chiếu quyết định cũ;\nNhập lý do, tác động, giảm thiểu,\nngười chịu trách nhiệm và hạn mới;
+|Hệ thống|
+if (Đúng quyền / phạm vi và đủ dữ liệu?) then (Có)
+else (Không)
+  :Không trình duyệt; yêu cầu bổ sung; audit;
+  stop
+endif
+:Lưu đề nghị gia hạn riêng;\nKhông ghi đè quyết định cũ;\nKhông đổi trạng thái Finding khi mới đề nghị;
+repeat
+  |Người phê duyệt rủi ro|
+  :Rà soát gia hạn;
+  |Hệ thống|
+  if (Đúng thẩm quyền và khác người đề nghị?) then (Có)
+  else (Không)
+    :Từ chối quyết định; audit;\nQuyết định cũ tiếp tục chịu hạn cũ;
+    stop
+  endif
+  |Người phê duyệt rủi ro|
+  if (Cần bổ sung?) then (Có)
+    :Ghi yêu cầu;
+    |Chủ sở hữu / ATTT|
+    :Bổ sung và gửi lại;
+  endif
+repeat while (Quyết định vừa rồi là yêu cầu bổ sung?) is (Có) not (Không)
+|Người phê duyệt rủi ro|
+if (Đồng ý gia hạn?) then (Có)
+  :Xác nhận điều kiện và ngày hết hạn mới;
+  |Hệ thống|
+  if (Quyết định hợp lệ và Finding vẫn Risk Accepted?) then (Có)
+    :Lưu quyết định gia hạn mới;\nÁp dụng hạn / điều kiện mới; giữ quyết định cũ; audit;
+  else (Không)
+    :Không tự chuyển Reopened về Risk Accepted;\nGiữ trạng thái hiện hành; ATTT tiếp tục AD-06;\nĐề nghị mới chỉ từ trạng thái được phép tại AD-08;
+  endif
+else (Không)
+  :Nhập lý do từ chối;
+  |Hệ thống|
+  :Lưu từ chối; không đổi quyết định cũ; audit;
+endif
+|Hệ thống|
+:AD-10 kiểm tra hạn / điều kiện hiện hành;\nĐề nghị đang chờ không tự kéo dài thời hạn;
+stop
+legend bottom
+K-01: Mọi thao tác người dùng phải kiểm tra quyền hiện hành + phạm vi phía máy chủ.
+Không đạt K-01: từ chối, ghi audit, không thực hiện bước đọc / ghi kế tiếp.
+K-02: Mọi thay đổi, phê duyệt, từ chối, lỗi và truy cập nhạy cảm theo nguồn 8.5 đều ghi audit.
+Audit: người, thời điểm, đối tượng, hành động, kết quả; trước / sau và bằng chứng khi có.
+Các lời gọi AD-xx phải bảo toàn tiền điều kiện, mọi nhánh lỗi và trạng thái đầu ra của AD được gọi.
+endlegend
+@enduml

@@ -1,0 +1,67 @@
+@startuml
+hide footbox
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 58
+skinparam BoxPadding 8
+skinparam ArrowColor #334155
+skinparam sequenceParticipantBackgroundColor #EAF2FB
+skinparam sequenceParticipantBorderColor #334155
+skinparam sequenceLifeLineBorderColor #94A3B8
+skinparam sequenceGroupBorderColor #64748B
+skinparam sequenceGroupHeaderFontColor #0F172A
+skinparam sequenceGroupBackgroundColor #F8FAFC
+skinparam sequenceReferenceBackgroundColor #EFF6FF
+skinparam sequenceReferenceBorderColor #93C5FD
+skinparam NoteBackgroundColor #FFF7E8
+skinparam NoteBorderColor #D9A441
+autonumber
+title SD-01 — Khai báo, cập nhật và phê duyệt tài sản
+actor "Chủ tài sản" as Owner
+actor "Chuyên viên ATTT" as Sec
+boundary "Giao diện" as UI
+control "Dịch vụ tài sản" as Svc
+database "CSDL HTQLHDK" as DB
+Owner -> UI : Khai báo hoặc đề nghị sửa tài sản
+UI -> Svc : Gửi thông tin và phiên bản scope
+ref over UI,DB : SD-00: kiểm quyền hiện hành, lỗi và audit
+Svc -> DB : Kiểm mã duy nhất; tìm domain/URL trùng
+DB --> Svc : Kết quả kiểm tra
+alt Mã trùng hoặc dữ liệu sai
+  Svc --> UI : Trả lỗi và vị trí cần sửa
+else Dữ liệu hợp lệ
+  opt Domain hoặc URL đã có
+    Svc --> UI : Cảnh báo để người khai báo rà soát
+  end
+  alt Tài sản mới
+    Svc -> DB : TX: asset Draft + scope đề nghị + rule/window + audit
+  else Sửa phạm vi
+    Svc -> DB : TX: scope revision mới + audit; giữ current_scope_id
+  else Chỉ sửa thông tin khác
+    Svc -> DB : TX: cập nhật theo quyền + audit; giữ trạng thái
+  end
+  opt Cần gửi scope để duyệt
+    Owner -> UI : Xác nhận sở hữu, mức quan trọng và scope
+    UI -> Svc : Gửi xác nhận đúng phiên bản
+    ref over UI,DB : SD-00: kiểm Owner đúng tài sản và dữ liệu đầy đủ
+    Svc -> DB : TX: confirmed_by/at; scope Pending Approval + audit
+    note over Svc,DB : Tài sản mới chuyển Pending Approval; sửa scope giữ trạng thái asset
+    Sec -> UI : Phê duyệt hoặc từ chối kèm lý do
+    UI -> Svc : Gửi quyết định và phiên bản đã xem
+    ref over UI,DB : SD-00: khóa asset; kiểm ATTT và scope hiện hành
+    alt Duyệt và đủ điều kiện
+      Svc -> DB : TX: scope Approved; current_scope_id; asset Active + audit
+      Svc --> UI : Tài sản và phạm vi được phép sử dụng
+    else Từ chối
+      Svc -> DB : TX: scope Rejected, quyết định và audit
+      opt Là tài sản mới
+        Svc -> DB : Trong cùng TX: asset về Draft
+      end
+      Svc --> UI : Trả lý do; sửa và xác nhận lại
+    end
+  end
+end
+@enduml

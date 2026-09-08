@@ -1,0 +1,53 @@
+@startuml
+hide footbox
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 58
+skinparam BoxPadding 8
+skinparam ArrowColor #334155
+skinparam sequenceParticipantBackgroundColor #EAF2FB
+skinparam sequenceParticipantBorderColor #334155
+skinparam sequenceLifeLineBorderColor #94A3B8
+skinparam sequenceGroupBorderColor #64748B
+skinparam sequenceGroupHeaderFontColor #0F172A
+skinparam sequenceGroupBackgroundColor #F8FAFC
+skinparam sequenceReferenceBackgroundColor #EFF6FF
+skinparam sequenceReferenceBorderColor #93C5FD
+skinparam NoteBackgroundColor #FFF7E8
+skinparam NoteBorderColor #D9A441
+autonumber
+title SD-17 — Gán, thu hồi quyền và xem nhật ký quyền
+actor "Quản trị viên" as Admin
+actor "Người dùng" as User
+boundary "Giao diện" as UI
+control "Dịch vụ quản trị quyền" as Svc
+database "CSDL HTQLHDK" as DB
+Admin -> UI : Chọn gán, thay đổi hoặc thu hồi quyền
+UI -> Svc : Người dùng, vai trò, asset, cờ nhạy cảm và lý do
+ref over UI,DB : SD-00: kiểm access.manage và dữ liệu đầu vào
+Svc -> DB : Đọc người dùng, tài sản và grant hiện hành
+DB --> Svc : Dữ liệu phân quyền
+alt Sai vai trò hoặc quyền nhạy cảm không hợp lệ
+  Svc -> DB : Audit từ chối cấp quyền
+  Svc --> UI : Trả lỗi; không cấp quyền
+else Cấp quyền mới
+  Svc -> DB : TX: INSERT user_role với quyền tường minh + audit trước/sau
+  Svc --> UI : Đã cấp quyền trong phạm vi
+else Thay đổi quyền nhạy cảm
+  Svc -> DB : TX: thu hồi dòng cũ; INSERT dòng mới + lý do + audit
+  Svc --> UI : Đã thay quyền; giữ lịch sử cấp/thu hồi
+else Thu hồi
+  Svc -> DB : TX: revoked_by/at + audit; không DELETE
+  Svc --> UI : Đã thu hồi quyền
+end
+User -> UI : Xem nhật ký thay đổi quyền
+UI -> Svc : Bộ lọc nhật ký quyền
+ref over UI,DB : SD-00: Admin/Auditor có audit.permission.read
+Svc -> DB : Chỉ SELECT audit quyền trong phạm vi cho phép
+DB --> Svc : Người, hành động, thời điểm và trước/sau đã che
+Svc --> UI : Lịch sử quyền chỉ đọc
+note over Svc,DB : Mọi yêu cầu SD-01..SD-18 kiểm grant hiện hành; Admin không có quyền raw mặc định
+@enduml

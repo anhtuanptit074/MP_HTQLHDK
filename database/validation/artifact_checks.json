@@ -1,0 +1,94 @@
+{
+  "checked_at": "2026-09-07T08:46:15.987947+00:00",
+  "tables": 27,
+  "columns": 344,
+  "foreign_keys": 91,
+  "checks": [
+    {
+      "name": "source_unchanged",
+      "path": "doi_tuong_sd_quy_trinh_hd.md",
+      "passed": true,
+      "sha256": "8BE9F0D04240F73443B3923D806E5653C922665AF2F3EC1F69961E73E58A7DB4"
+    },
+    {
+      "name": "local_links",
+      "passed": true,
+      "count": 58,
+      "missing": []
+    },
+    {
+      "name": "schema_model_tables",
+      "passed": true,
+      "count": 27
+    },
+    {
+      "name": "dictionary_tables",
+      "passed": true
+    },
+    {
+      "name": "detailed_table_explanations",
+      "passed": true,
+      "count": 27
+    },
+    {
+      "name": "detailed_table_anchors",
+      "passed": true,
+      "count": 27
+    },
+    {
+      "name": "system_build_lifecycle",
+      "passed": true,
+      "phases": 16
+    },
+    {
+      "name": "rendered_diagram",
+      "path": "01_tai_san_phan_quyen.puml",
+      "passed": true
+    },
+    {
+      "name": "rendered_diagram",
+      "path": "02_lich_quet_nhap_ket_qua.puml",
+      "passed": true
+    },
+    {
+      "name": "rendered_diagram",
+      "path": "03_phan_tich_khac_phuc.puml",
+      "passed": true
+    },
+    {
+      "name": "rendered_diagram",
+      "path": "04_rui_ro_bao_mat.puml",
+      "passed": true
+    },
+    {
+      "name": "database_tests",
+      "passed": true,
+      "count": 75
+    },
+    {
+      "name": "tested_model_version",
+      "passed": true
+    },
+    {
+      "name": "tested_file_matches",
+      "path": "01_schema.sql",
+      "passed": true
+    },
+    {
+      "name": "tested_file_matches",
+      "path": "02_guards_and_views.sql",
+      "passed": true
+    },
+    {
+      "name": "tested_file_matches",
+      "path": "03_reference_data.sql",
+      "passed": true
+    },
+    {
+      "name": "tested_file_matches",
+      "path": "fixture.sql",
+      "passed": true
+    }
+  ],
+  "all_passed": true
+}

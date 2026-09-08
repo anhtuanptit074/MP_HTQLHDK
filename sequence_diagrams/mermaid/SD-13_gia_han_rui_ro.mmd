@@ -1,0 +1,35 @@
+sequenceDiagram
+    autonumber
+    actor Owner as Chủ tài sản
+    actor Approver as Người duyệt rủi ro
+    participant UI as Giao diện
+    participant Svc as Dịch vụ chấp nhận rủi ro
+    participant DB as CSDL HTQLHDK
+    Owner->>UI: Đề nghị gia hạn quyết định hiện hành
+    UI->>Svc: renewal_of_id, lý do và hạn mới
+    Note over UI,DB: SD-00: Owner/ATTT； kiểm Risk Accepted và quyết định hiện hành
+    Svc->>DB: TX: hồ sơ mới Pending, renewal_of_id, previous = Risk Accepted + audit
+    Svc-->>UI: Đã gửi； hạn cũ tiếp tục có hiệu lực
+    opt Người duyệt yêu cầu bổ sung
+    Note over Owner,DB: SD-12: Needs Information, bổ sung, gửi lại； không đổi Finding
+    end
+    Approver->>UI: Quyết định gia hạn
+    UI->>Svc: Quyết định, căn cứ, điều kiện và thời hạn
+    Note over UI,DB: SD-00: độc lập； khóa Finding/hồ sơ； kiểm điều kiện hiện hành
+    Svc->>DB: Đọc quyết định Approved đã áp dụng mới nhất và thời gian
+    DB-->>Svc: Quyết định hiện hành
+    alt Hết hạn, mất điều kiện hoặc Finding đã Reopened
+    Note over Svc,DB: SD-14: xử lý hết điều kiện； không áp gia hạn lỗi thời
+    Svc-->>UI: Yêu cầu tiếp tục theo trạng thái hiện hành
+    else Hồ sơ còn phù hợp
+    alt Chấp thuận và đã đến hiệu lực
+    Svc->>DB: TX: hồ sơ mới Approved, quyết định, applied_at + audit
+    Svc-->>UI: Hạn và điều kiện mới có hiệu lực； giữ lịch sử cũ
+    else Từ chối
+    Svc->>DB: TX: hồ sơ mới Rejected + lý do + audit
+    Svc-->>UI: Giữ quyết định cũ theo hạn và điều kiện cũ
+    else Chưa đủ điều kiện áp dụng
+    Svc-->>UI: Chưa thay quyết định có hiệu lực
+    end
+    end
+    Note over Svc,DB: Không thêm cạnh Risk Accepted thành Pending Risk Acceptance

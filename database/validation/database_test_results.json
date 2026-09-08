@@ -1,0 +1,361 @@
+{
+  "checked_at": "2026-09-08T16:49:14.142Z",
+  "model_version": "2.0",
+  "engine": "PostgreSQL 17.5 on aarch64-unknown-linux-gnu, compiled by emcc (Emscripten gcc/clang-like replacement + linker emulating GNU ld) 3.1.74 (1092ec30a3fb1d46b1782ff1b4db5094d3d06ae5), 32-bit",
+  "input_hashes": {
+    "01_schema.sql": "b78afd73229a4ff38d48f9177624c4a29f8d6d9f3571511f0bd9917af9eb1ec0",
+    "02_guards_and_views.sql": "3d414eb5de8a0da0d8d92375384d7fa4d804cc2a60db53f7811f07dc685cfc3a",
+    "03_reference_data.sql": "e01b6efb993b6947e3e14f8924916be9eb64d6c70245be20bf4b1de567d7f009",
+    "fixture.sql": "3af103daefa470937937d217a999ca252743261dcaace6f75a85366722cdac45"
+  },
+  "scope": "SQL structure, constraints, selected triggers and views only; not application authorization, concurrent sessions, file security or real ZAP parsing",
+  "passed": 75,
+  "total": 75,
+  "results": [
+    {
+      "name": "DDL 01_schema.sql",
+      "passed": true
+    },
+    {
+      "name": "DDL 02_guards_and_views.sql",
+      "passed": true
+    },
+    {
+      "name": "DDL 03_reference_data.sql",
+      "passed": true
+    },
+    {
+      "name": "Fixture liên kết từ tài sản tới khắc phục và hồ sơ rủi ro",
+      "passed": true
+    },
+    {
+      "name": "Đúng 27 bảng và số FK theo từ điển",
+      "passed": true
+    },
+    {
+      "name": "Mã tài sản duy nhất",
+      "passed": true,
+      "sqlstate": "23505"
+    },
+    {
+      "name": "Domain trùng được phép để cảnh báo",
+      "passed": true
+    },
+    {
+      "name": "Phạm vi đã duyệt bất biến",
+      "passed": true,
+      "sqlstate": "23514"
+    },
+    {
+      "name": "Không thêm rule vào phạm vi đã duyệt",
+      "passed": true,
+      "sqlstate": "23514"
+    },
+    {
+      "name": "Không gắn phạm vi khác tài sản",
+      "passed": true,
+      "sqlstate": "23514"
+    },
+    {
+      "name": "Tài sản Suspended không kích hoạt lịch",
+      "passed": true,
+      "sqlstate": "23514"
+    },
+    {
+      "name": "Lịch Active phải có mục tiêu",
+      "passed": true,
+      "sqlstate": "23514"
+    },
+    {
+      "name": "Chống nhập lặp tài sản/lần quét/checksum",
+      "passed": true,
+      "sqlstate": "23505"
+    },
+    {
+      "name": "Báo cáo gốc bất biến trong bảng lô nhập",
+      "passed": true,
+      "sqlstate": "23514"
+    },
+    {
+      "name": "Không thay checksum hoặc người nhập nguồn",
+      "passed": true,
+      "sqlstate": "23514"
+    },
+    {
+      "name": "Cho cập nhật tiến trình khi metadata gốc giữ nguyên",
+      "passed": true
+    },
+    {
+      "name": "Không nhận HTML để chuẩn hóa",
+      "passed": true,
+      "sqlstate": "23514"
+    },
+    {
+      "name": "Lưu được lô Rejected vì sai loại hoặc tệp rỗng",
+      "passed": true
+    },
+    {
+      "name": "Tệp sai loại không được vào Processing",
+      "passed": true,
+      "sqlstate": "23514"
+    },
+    {
+      "name": "Tệp rỗng không được chuẩn hóa dù mang loại JSON",
+      "passed": true,
+      "sqlstate": "23514"
+    },
+    {
+      "name": "Báo cáo 0 cảnh báo vẫn Completed",
+      "passed": true
+    },
+    {
+      "name": "Occurrence duy nhất theo finding/scan",
+      "passed": true,
+      "sqlstate": "23505"
+    },
+    {
+      "name": "FK ghép chặn occurrence khác tài sản",
+      "passed": true,
+      "sqlstate": "23503"
+    },
+    {
+      "name": "Hai tệp cùng scan giữ nguồn riêng, chung occurrence",
+      "passed": true
+    },
+    {
+      "name": "Không lặp dòng nguồn cùng lô",
+      "passed": true,
+      "sqlstate": "23505"
+    },
+    {
+      "name": "Partial giữ dữ liệu hợp lệ và lỗi",
+      "passed": true
+    },
+    {
+      "name": "Lô Rejected không sinh observation",
+      "passed": true,
+      "sqlstate": "23514"
+    },
+    {
+      "name": "Không chuyển lô có dòng hợp lệ thành Rejected",
+      "passed": true,
+      "sqlstate": "23514"
+    },
+    {
+      "name": "Source Severity không có Critical",
+      "passed": true,
+      "sqlstate": "22P02"
+    },
+    {
+      "name": "Hạ High tự yêu cầu rà soát dù cờ false",
+      "passed": true,
+      "sqlstate": "23514"
+    },
+    {
+      "name": "Người đánh giá không tự rà soát thứ hai",
+      "passed": true,
+      "sqlstate": "23514"
+    },
+    {
+      "name": "Hạ mức có rà soát độc lập hợp lệ",
+      "passed": true
+    },
+    {
+      "name": "Không dùng mức cũ sai",
+      "passed": true,
+      "sqlstate": "23514"
+    },
+    {
+      "name": "Không dùng disposition làm Final Severity",
+      "passed": true,
+      "sqlstate": "23514"
+    },
+    {
+      "name": "Đánh giá Applied không bị ghi đè",
+      "passed": true,
+      "sqlstate": "23514"
+    },
+    {
+      "name": "Không giới hạn số đề xuất mức độ chờ",
+      "passed": true
+    },
+    {
+      "name": "Không giới hạn một phiếu cho cả vòng đời",
+      "passed": true
+    },
+    {
+      "name": "Thay hạn giữ lịch sử trước/sau",
+      "passed": true
+    },
+    {
+      "name": "Không ghi sự kiện từ bản phiếu đã cũ",
+      "passed": true,
+      "sqlstate": "23514"
+    },
+    {
+      "name": "Lịch sử phiếu bất biến",
+      "passed": true,
+      "sqlstate": "23514"
+    },
+    {
+      "name": "Đổi hạn giữ tác giả bản khắc phục",
+      "passed": true,
+      "sqlstate": "23514"
+    },
+    {
+      "name": "Con trỏ hiện hành không lùi sự kiện",
+      "passed": true,
+      "sqlstate": "23514"
+    },
+    {
+      "name": "View phiếu lấy trạng thái và mức độ từ Finding",
+      "passed": true
+    },
+    {
+      "name": "Xác minh hợp lệ không cảnh báo cho phép đóng",
+      "passed": true
+    },
+    {
+      "name": "Người khắc phục không tự xác nhận đóng",
+      "passed": true,
+      "sqlstate": "23514"
+    },
+    {
+      "name": "Đóng cần kết quả xác minh liên kết",
+      "passed": true,
+      "sqlstate": "23514"
+    },
+    {
+      "name": "Không đóng khi thiếu báo cáo",
+      "passed": true,
+      "sqlstate": "23514"
+    },
+    {
+      "name": "Không đóng khi chưa xác nhận bao phủ",
+      "passed": true,
+      "sqlstate": "23514"
+    },
+    {
+      "name": "Lô Failed không đủ căn cứ",
+      "passed": true,
+      "sqlstate": "23514"
+    },
+    {
+      "name": "Scan trước khắc phục không đủ căn cứ",
+      "passed": true,
+      "sqlstate": "23514"
+    },
+    {
+      "name": "Thiếu bản sửa hoàn chỉnh không đủ căn cứ",
+      "passed": true,
+      "sqlstate": "23514"
+    },
+    {
+      "name": "Fingerprint còn trong scan không thể kết luận vắng",
+      "passed": true,
+      "sqlstate": "23514"
+    },
+    {
+      "name": "Không giới hạn một kết quả mỗi yêu cầu",
+      "passed": true
+    },
+    {
+      "name": "Không thêm điều kiện quét sau ngày lập yêu cầu",
+      "passed": true
+    },
+    {
+      "name": "Người chỉ được phân công không bị cấm đóng",
+      "passed": true
+    },
+    {
+      "name": "Người đề nghị không tự duyệt rủi ro",
+      "passed": true,
+      "sqlstate": "23514"
+    },
+    {
+      "name": "Duyệt độc lập có hạn",
+      "passed": true
+    },
+    {
+      "name": "Không ghi đè hạn đã được duyệt",
+      "passed": true,
+      "sqlstate": "23514"
+    },
+    {
+      "name": "Gia hạn dùng hồ sơ mới",
+      "passed": true
+    },
+    {
+      "name": "SLA đã phê duyệt giữ lịch sử",
+      "passed": true,
+      "sqlstate": "23514"
+    },
+    {
+      "name": "Ma trận Admin chỉ quản trị quyền và audit quyền",
+      "passed": true
+    },
+    {
+      "name": "Vai trò không tài sản không phải wildcard",
+      "passed": true
+    },
+    {
+      "name": "Quyền nhạy cảm mặc định false",
+      "passed": true
+    },
+    {
+      "name": "Quyền bản gốc cần tài sản cụ thể",
+      "passed": true,
+      "sqlstate": "23514"
+    },
+    {
+      "name": "Quyền bản gốc cụ thể được lưu",
+      "passed": true
+    },
+    {
+      "name": "View thường không lộ địa chỉ gốc/khóa/mã hóa",
+      "passed": true
+    },
+    {
+      "name": "Báo cáo nhiều tài sản có bảng nối",
+      "passed": true
+    },
+    {
+      "name": "Liên kết tải thu hồi được",
+      "passed": true
+    },
+    {
+      "name": "Không đổi người nhận của tệp đã phát hành",
+      "passed": true,
+      "sqlstate": "23514"
+    },
+    {
+      "name": "Không kích hoạt lại liên kết đã thu hồi",
+      "passed": true,
+      "sqlstate": "23514"
+    },
+    {
+      "name": "Không xóa cứng tài sản",
+      "passed": true,
+      "sqlstate": "23514"
+    },
+    {
+      "name": "Không truncate audit",
+      "passed": true,
+      "sqlstate": "23514"
+    },
+    {
+      "name": "Audit chung truy vấn được lịch sử Finding",
+      "passed": true
+    },
+    {
+      "name": "Audit chuyển trạng thái cần lý do",
+      "passed": true,
+      "sqlstate": "23514"
+    },
+    {
+      "name": "Audit không gắn bằng chứng khác Finding",
+      "passed": true,
+      "sqlstate": "23503"
+    }
+  ]
+}

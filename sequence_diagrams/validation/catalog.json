@@ -1,0 +1,421 @@
+[
+  {
+    "id": "SD-00",
+    "slug": "kiem_quyen_va_giao_dich",
+    "title": "Kiểm quyền và giao dịch dùng chung",
+    "ucs": [
+      "UC-I02",
+      "UC-C07"
+    ],
+    "ads": [],
+    "tables": [
+      "app_user",
+      "user_role",
+      "asset",
+      "audit_log"
+    ]
+  },
+  {
+    "id": "SD-01",
+    "slug": "khai_bao_phe_duyet_tai_san",
+    "title": "Khai báo, cập nhật và phê duyệt tài sản",
+    "ucs": [
+      "UC-A01",
+      "UC-A02",
+      "UC-A03",
+      "UC-A04"
+    ],
+    "ads": [
+      "AD-02"
+    ],
+    "tables": [
+      "asset",
+      "asset_scope_revision",
+      "asset_scope_rule",
+      "asset_scan_window",
+      "user_role",
+      "audit_log"
+    ]
+  },
+  {
+    "id": "SD-02",
+    "slug": "vong_doi_tai_san",
+    "title": "Tạm dừng, tiếp tục và ngừng tài sản",
+    "ucs": [
+      "UC-A02",
+      "UC-A05",
+      "UC-A06"
+    ],
+    "ads": [
+      "AD-14"
+    ],
+    "tables": [
+      "asset",
+      "asset_scope_revision",
+      "scan_schedule",
+      "audit_log"
+    ]
+  },
+  {
+    "id": "SD-03",
+    "slug": "quan_ly_lich_quet",
+    "title": "Tạo, sửa, kích hoạt và tạm dừng lịch quét",
+    "ucs": [
+      "UC-S01",
+      "UC-S02",
+      "UC-S03",
+      "UC-S04",
+      "UC-S08"
+    ],
+    "ads": [
+      "AD-03"
+    ],
+    "tables": [
+      "asset",
+      "asset_scope_revision",
+      "asset_scope_rule",
+      "asset_scan_window",
+      "scan_schedule",
+      "audit_log"
+    ]
+  },
+  {
+    "id": "SD-04",
+    "slug": "den_lich_quet_ben_ngoai",
+    "title": "Đến lịch và ghi nhận lần quét bên ngoài",
+    "ucs": [
+      "UC-S05",
+      "UC-S06",
+      "UC-S07"
+    ],
+    "ads": [
+      "AD-11"
+    ],
+    "tables": [
+      "asset",
+      "scan_schedule",
+      "scan_occurrence",
+      "audit_log",
+      "notification"
+    ]
+  },
+  {
+    "id": "SD-05",
+    "slug": "nhap_kiem_tra_bao_cao_zap",
+    "title": "Nhập và kiểm tra báo cáo OWASP ZAP",
+    "ucs": [
+      "UC-I01",
+      "UC-I02",
+      "UC-I03",
+      "UC-I04",
+      "UC-I05",
+      "UC-I06",
+      "UC-I07",
+      "UC-I09",
+      "UC-I11",
+      "UC-I12"
+    ],
+    "ads": [
+      "AD-04"
+    ],
+    "tables": [
+      "asset",
+      "scan_occurrence",
+      "import_batch",
+      "import_error",
+      "audit_log"
+    ]
+  },
+  {
+    "id": "SD-06",
+    "slug": "chuan_hoa_chong_trung_tai_xuat_hien",
+    "title": "Chuẩn hóa, chống trùng và xử lý tái xuất hiện",
+    "ucs": [
+      "UC-I07",
+      "UC-I08",
+      "UC-I09",
+      "UC-I10",
+      "UC-I11",
+      "UC-R11"
+    ],
+    "ads": [
+      "AD-12",
+      "AD-10"
+    ],
+    "tables": [
+      "import_batch",
+      "import_error",
+      "finding",
+      "finding_occurrence",
+      "finding_observation",
+      "finding_review",
+      "audit_log"
+    ]
+  },
+  {
+    "id": "SD-07",
+    "slug": "phan_tich_final_severity",
+    "title": "Phân tích, xác nhận và điều chỉnh Final Severity",
+    "ucs": [
+      "UC-T01",
+      "UC-T02",
+      "UC-T05",
+      "UC-T06"
+    ],
+    "ads": [
+      "AD-05"
+    ],
+    "tables": [
+      "finding",
+      "finding_observation",
+      "finding_review",
+      "evidence",
+      "sla_rule",
+      "remediation_ticket",
+      "ticket_event",
+      "audit_log"
+    ]
+  },
+  {
+    "id": "SD-08",
+    "slug": "false_positive_ngoai_pham_vi",
+    "title": "Kết quả sai, ngoài phạm vi và rà soát lại",
+    "ucs": [
+      "UC-T01",
+      "UC-T03",
+      "UC-T04",
+      "UC-T06"
+    ],
+    "ads": [
+      "AD-07"
+    ],
+    "tables": [
+      "finding",
+      "finding_observation",
+      "finding_review",
+      "evidence",
+      "audit_log"
+    ]
+  },
+  {
+    "id": "SD-09",
+    "slug": "phan_cong_tiep_nhan_dieu_chinh_han",
+    "title": "Tạo phiếu, phân công, tiếp nhận và điều chỉnh hạn",
+    "ucs": [
+      "UC-R01",
+      "UC-R02",
+      "UC-R03",
+      "UC-R13"
+    ],
+    "ads": [
+      "AD-06",
+      "AD-16"
+    ],
+    "tables": [
+      "finding",
+      "remediation_ticket",
+      "ticket_event",
+      "sla_rule",
+      "team",
+      "team_member",
+      "audit_log"
+    ]
+  },
+  {
+    "id": "SD-10",
+    "slug": "cap_nhat_khac_phuc_yeu_cau_xac_minh",
+    "title": "Cập nhật khắc phục và yêu cầu xác minh",
+    "ucs": [
+      "UC-R04",
+      "UC-R05",
+      "UC-R06",
+      "UC-R07"
+    ],
+    "ads": [
+      "AD-06"
+    ],
+    "tables": [
+      "finding",
+      "remediation_ticket",
+      "ticket_event",
+      "evidence",
+      "verification_request",
+      "audit_log",
+      "notification"
+    ]
+  },
+  {
+    "id": "SD-11",
+    "slug": "quet_xac_minh_dong_mo_lai",
+    "title": "Quét xác minh, đóng hoặc mở lại phát hiện",
+    "ucs": [
+      "UC-R08",
+      "UC-R09",
+      "UC-R10",
+      "UC-R11"
+    ],
+    "ads": [
+      "AD-06"
+    ],
+    "tables": [
+      "finding",
+      "ticket_event",
+      "verification_request",
+      "scan_occurrence",
+      "import_batch",
+      "finding_occurrence",
+      "finding_observation",
+      "verification_result",
+      "audit_log"
+    ]
+  },
+  {
+    "id": "SD-12",
+    "slug": "de_nghi_phe_duyet_rui_ro",
+    "title": "Đề nghị và phê duyệt chấp nhận rủi ro",
+    "ucs": [
+      "UC-RA01",
+      "UC-RA02",
+      "UC-RA03",
+      "UC-RA04"
+    ],
+    "ads": [
+      "AD-08"
+    ],
+    "tables": [
+      "finding",
+      "risk_acceptance",
+      "audit_log",
+      "notification"
+    ]
+  },
+  {
+    "id": "SD-13",
+    "slug": "gia_han_rui_ro",
+    "title": "Gia hạn bằng quyết định rủi ro mới",
+    "ucs": [
+      "UC-RA02",
+      "UC-RA03",
+      "UC-RA04",
+      "UC-RA07"
+    ],
+    "ads": [
+      "AD-13"
+    ],
+    "tables": [
+      "finding",
+      "risk_acceptance",
+      "audit_log",
+      "notification"
+    ]
+  },
+  {
+    "id": "SD-14",
+    "slug": "het_dieu_kien_rui_ro_mo_lai",
+    "title": "Hết điều kiện chấp nhận rủi ro và mở lại",
+    "ucs": [
+      "UC-RA05",
+      "UC-RA06",
+      "UC-R11"
+    ],
+    "ads": [
+      "AD-10"
+    ],
+    "tables": [
+      "finding",
+      "risk_acceptance",
+      "audit_log",
+      "notification"
+    ]
+  },
+  {
+    "id": "SD-15",
+    "slug": "xem_du_lieu_bao_cao_goc",
+    "title": "Xem dữ liệu, lịch sử và báo cáo gốc",
+    "ucs": [
+      "UC-A07",
+      "UC-I12",
+      "UC-T06",
+      "UC-C04",
+      "UC-C06",
+      "UC-C09"
+    ],
+    "ads": [
+      "AD-09"
+    ],
+    "tables": [
+      "app_user",
+      "user_role",
+      "asset",
+      "finding",
+      "import_batch",
+      "remediation_ticket",
+      "ticket_event",
+      "finding_review",
+      "evidence",
+      "audit_log"
+    ]
+  },
+  {
+    "id": "SD-16",
+    "slug": "xuat_tai_thu_hoi_bao_cao",
+    "title": "Xuất, tải và thu hồi liên kết báo cáo",
+    "ucs": [
+      "UC-C05",
+      "UC-C10"
+    ],
+    "ads": [
+      "AD-09"
+    ],
+    "tables": [
+      "app_user",
+      "user_role",
+      "report_export",
+      "report_export_asset",
+      "audit_log"
+    ]
+  },
+  {
+    "id": "SD-17",
+    "slug": "gan_thu_hoi_quyen_audit",
+    "title": "Gán, thu hồi quyền và xem nhật ký quyền",
+    "ucs": [
+      "UC-C01",
+      "UC-C02",
+      "UC-C03"
+    ],
+    "ads": [
+      "AD-15"
+    ],
+    "tables": [
+      "app_user",
+      "user_role",
+      "asset",
+      "audit_log"
+    ]
+  },
+  {
+    "id": "SD-18",
+    "slug": "thoi_han_va_thong_bao",
+    "title": "Theo dõi thời hạn và thông báo nội bộ",
+    "ucs": [
+      "UC-R12",
+      "UC-C08"
+    ],
+    "ads": [
+      "AD-16"
+    ],
+    "tables": [
+      "scan_schedule",
+      "scan_occurrence",
+      "import_batch",
+      "finding",
+      "remediation_ticket",
+      "ticket_event",
+      "sla_rule",
+      "risk_acceptance",
+      "notification",
+      "audit_log"
+    ]
+  }
+]

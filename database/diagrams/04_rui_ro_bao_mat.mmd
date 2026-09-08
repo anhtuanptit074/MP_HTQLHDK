@@ -1,0 +1,73 @@
+erDiagram
+    app_user {
+        bigint id PK
+    }
+    asset {
+        bigint id PK, FK
+        varchar code
+        bigint owner_id FK
+        bigint technical_team_id FK
+        bigint security_officer_id FK
+        asset_status status
+        bigint current_scope_id FK
+    }
+    finding {
+        bigint id PK, FK
+        varchar code
+        bigint asset_id FK
+        varchar fingerprint
+        finding_status status
+        bigint current_review_id FK
+        bigint verification_result_id FK
+    }
+    risk_acceptance {
+        bigint id PK
+        bigint finding_id FK
+        bigint renewal_of_id FK
+        bigint responsible_user_id FK
+        text status
+        timestamptz valid_until
+    }
+    audit_log {
+        bigint id PK
+        bigint actor_id FK
+        bigint asset_id FK
+        bigint finding_id FK
+        bigint evidence_id FK
+        bigint verification_result_id FK
+        bigint risk_acceptance_id FK
+        bigint finding_review_id FK
+        bigint trigger_occurrence_id FK
+    }
+    report_export {
+        bigint id PK
+        bigint recipient_id FK
+        varchar token_hash
+        timestamptz expires_at
+    }
+    report_export_asset {
+        bigint export_id PK, FK
+        bigint asset_id PK, FK
+    }
+    notification {
+        bigint id PK
+        bigint recipient_id FK
+        bigint asset_id FK
+        bigint finding_id FK
+    }
+    app_user |o--o{ asset : "owner_id"
+    app_user |o--o{ asset : "security_officer_id"
+    asset ||--o{ finding : "asset_id"
+    finding ||--o{ risk_acceptance : "finding_id"
+    risk_acceptance |o--o{ risk_acceptance : "renewal_of_id"
+    app_user ||--o{ risk_acceptance : "responsible_user_id"
+    app_user |o--o{ audit_log : "actor_id"
+    asset |o--o{ audit_log : "asset_id"
+    finding |o--o{ audit_log : "finding_id"
+    risk_acceptance |o--o{ audit_log : "risk_acceptance_id"
+    app_user ||--o{ report_export : "recipient_id"
+    report_export ||--o{ report_export_asset : "export_id"
+    asset ||--o{ report_export_asset : "asset_id"
+    app_user ||--o{ notification : "recipient_id"
+    asset ||--o{ notification : "asset_id"
+    finding |o--o{ notification : "finding_id"

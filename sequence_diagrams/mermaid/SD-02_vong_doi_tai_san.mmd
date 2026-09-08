@@ -1,0 +1,31 @@
+sequenceDiagram
+    autonumber
+    actor Sec as Chuyên viên ATTT
+    participant UI as Giao diện
+    participant Svc as Dịch vụ tài sản
+    participant DB as CSDL HTQLHDK
+    Sec->>UI: Chọn tài sản, thao tác và lý do
+    UI->>Svc: Yêu cầu thay đổi vòng đời
+    Note over UI,DB: SD-00: kiểm quyền, khóa asset và audit
+    Svc->>DB: Đọc trạng thái, scope và sở hữu hiện hành
+    DB-->>Svc: Dữ liệu tài sản
+    alt Asset Retired
+    Svc-->>UI: Giữ Retired； chỉ xem lịch sử theo quyền
+    else Tạm dừng
+    Svc->>DB: TX: asset Suspended + audit
+    Svc-->>UI: Đã tạm dừng tài sản
+    else Ngừng hoạt động
+    Svc->>DB: TX: asset Retired + audit
+    Svc-->>UI: Đã ngừng hoạt động； giữ lịch sử
+    else Tiếp tục từ Suspended
+    alt Scope mới chưa được duyệt
+    Note over Sec,DB: SD-01: xác nhận và duyệt lại scope trước áp dụng
+    Svc-->>UI: Chưa tiếp tục khi điều kiện chưa đạt
+    else Sở hữu, mức quan trọng, scope và khung giờ hợp lệ
+    Svc->>DB: TX: asset Active + audit
+    Svc-->>UI: Tài sản hoạt động trở lại
+    else Chưa đủ điều kiện
+    Svc-->>UI: Giữ trạng thái； nêu thông tin cần bổ sung
+    end
+    end
+    Note over Svc,DB: SD-03/04/05 luôn kiểm Asset Active； không tự xóa lịch hoặc lịch sử
