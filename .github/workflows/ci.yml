@@ -13,11 +13,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: 10.0.400
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
@@ -74,7 +74,7 @@ jobs:
       PGPASSWORD: ci_ephemeral_database_only
       PGOPTIONS: -c timezone=UTC
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Apply baseline
         run: psql -v ON_ERROR_STOP=1 -f ops/migrations/V001__baseline.psql
       - name: Verify baseline

@@ -5,15 +5,15 @@
   "files": [
     {
       "path": "database/sql/01_schema.sql",
-      "sha256": "b78afd73229a4ff38d48f9177624c4a29f8d6d9f3571511f0bd9917af9eb1ec0"
+      "sha256": "d156a5dce4d1dd4f4546536de988e7f8371549b5433892cc76b6219de523c007"
     },
     {
       "path": "database/sql/02_guards_and_views.sql",
-      "sha256": "3d414eb5de8a0da0d8d92375384d7fa4d804cc2a60db53f7811f07dc685cfc3a"
+      "sha256": "8eaac7d3d3dc3b3f27cab3eb393435150690eaddc1f9da0bedcf15b5d7e0d120"
     },
     {
       "path": "database/sql/03_reference_data.sql",
-      "sha256": "e01b6efb993b6947e3e14f8924916be9eb64d6c70245be20bf4b1de567d7f009"
+      "sha256": "22a326c34d85c78da443c30e45bda6823fd28f2cd6c505cfc591478f3de33bde"
     }
   ],
   "rollback": "No automatic production down migration. Restore/forward-fix according to docs/development/04_migrations.md."

@@ -2,7 +2,7 @@
 
 ## 1. Baseline
 
-`ops/migrations/V001__baseline.psql` áp dụng ba SQL nguồn đã kiểm chứng theo thứ tự schema → guard/view → reference data. `V001__manifest.json` khóa SHA-256; script kiểm tra giai đoạn 10 fail khi nội dung lệch.
+`ops/migrations/V001__baseline.psql` áp dụng ba SQL nguồn đã kiểm chứng theo thứ tự schema → guard/view → reference data. `V001__manifest.json` khóa SHA-256; script kiểm tra giai đoạn 10 fail khi nội dung lệch. Checksum được tính trên nội dung UTF-8 với xuống dòng LF chuẩn hóa, nên cùng một migration có cùng giá trị trên Windows và Linux.
 
 Metadata migration nằm trong schema `htqlhdk_migration`, tách khỏi 27 bảng nghiệp vụ. Advisory lock theo phiên ngăn hai runner áp dụng đồng thời. Trạng thái `Running` còn lại sau lỗi là dấu hiệu cần khôi phục, không tự đánh dấu thành công.
 

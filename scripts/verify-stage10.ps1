@@ -48,7 +48,14 @@ foreach ($file in $manifest.files) {
     $fullPath = Join-Path $root $file.path
     Assert-True (Test-Path -LiteralPath $fullPath) "Migration source missing: $($file.path)"
     if (Test-Path -LiteralPath $fullPath) {
-        $actual = (Get-FileHash -LiteralPath $fullPath -Algorithm SHA256).Hash.ToLowerInvariant()
+        # Git checkout co the tao LF tren Linux va CRLF tren Windows. Manifest khoa
+        # noi dung UTF-8/LF chuan hoa de cung mot migration co cung checksum moi noi.
+        $text = [System.IO.File]::ReadAllText($fullPath, [System.Text.Encoding]::UTF8)
+        $canonicalText = $text.Replace("`r`n", "`n").Replace("`r", "`n")
+        $canonicalBytes = [System.Text.Encoding]::UTF8.GetBytes($canonicalText)
+        $actual = [Convert]::ToHexString(
+            [System.Security.Cryptography.SHA256]::HashData($canonicalBytes)
+        ).ToLowerInvariant()
         Assert-True ($actual -eq $file.sha256) "Migration checksum drift: $($file.path)"
     }
 }
