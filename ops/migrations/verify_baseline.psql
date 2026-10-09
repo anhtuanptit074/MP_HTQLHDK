@@ -3,13 +3,20 @@
 DO $$
 DECLARE
     business_table_count integer;
+    expected_table_count integer;
 BEGIN
+    -- V002 extends the baseline. Re-running verification must preserve that schema.
+    SELECT CASE WHEN EXISTS (
+        SELECT 1 FROM htqlhdk_migration.schema_migration
+        WHERE version = 'V002' AND status = 'Applied'
+    ) THEN 30 ELSE 27 END INTO expected_table_count;
+
     SELECT count(*) INTO business_table_count
     FROM information_schema.tables
     WHERE table_schema = 'htqlhdk' AND table_type = 'BASE TABLE';
 
-    IF business_table_count <> 27 THEN
-        RAISE EXCEPTION 'Expected 27 HTQLHDK tables, found %', business_table_count;
+    IF business_table_count <> expected_table_count THEN
+        RAISE EXCEPTION 'Expected % HTQLHDK tables, found %', expected_table_count, business_table_count;
     END IF;
 
     IF NOT EXISTS (
@@ -24,5 +31,4 @@ BEGIN
     END IF;
 END $$;
 
-SELECT 'PASS: V001 applied; 27 business tables; timezone UTC.' AS result;
-
+SELECT 'PASS: V001 applied; table count matches applied migrations; timezone UTC.' AS result;

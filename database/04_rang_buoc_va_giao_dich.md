@@ -1,6 +1,5 @@
 # Ràng buộc và giao dịch — mô hình 27 bảng
 
-Nguồn duy nhất: [doi_tuong_sd_quy_trinh_hd.md](../doi_tuong_sd_quy_trinh_hd.md) phiên bản 2.2. SQL đã có ràng buộc cấu trúc và các guard được liệt kê dưới đây. **SQL chưa phải một ứng dụng workflow hoặc phân quyền hoàn chỉnh.** Không cấp kết nối sửa bảng trực tiếp cho người dùng nghiệp vụ.
 
 ## 1. Ranh giới thực thi
 

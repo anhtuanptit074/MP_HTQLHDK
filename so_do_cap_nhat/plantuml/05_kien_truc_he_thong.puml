@@ -1,0 +1,76 @@
+@startuml
+title Kiến trúc tổng thể HTQLHDK — tích hợp tự động OWASP ZAP
+left to right direction
+skinparam shadowing false
+skinparam componentStyle rectangle
+skinparam defaultFontName Arial
+skinparam defaultFontSize 11
+skinparam packageBackgroundColor white
+skinparam packageBorderColor #94A3B8
+skinparam componentBackgroundColor white
+skinparam componentBorderColor #334155
+skinparam databaseBackgroundColor white
+skinparam databaseBorderColor #334155
+skinparam ArrowColor #475569
+
+package "Vùng người dùng" {
+  actor "Người dùng nghiệp vụ" as USER
+  component "Trình duyệt" as BROWSER
+}
+
+package "Edge / DMZ" {
+  component "Reverse proxy / WAF\nTLS, rate limit, size limit" as EDGE
+}
+
+package "Vùng ứng dụng riêng" {
+  component "Web UI\nReact + TypeScript" as UI
+  component "Backend API\nASP.NET Core .NET 10\nRBAC theo vai trò + tài sản\nAsset / Schedule / Finding / Remediation" as API
+  component "Htqlhdk.Worker\nScheduler + ZAP Orchestrator\nPlan Renderer + Report Inspector\nImport processor" as WORKER
+}
+
+package "Vùng ZAP runner cô lập" {
+  component "Runner chuyên dụng\nDocker CLI / orchestrator" as RUNNER
+  component "OWASP ZAP container\nAutomation Framework\nMột container cho mỗi lần quét" as ZAP
+}
+
+cloud "Website mục tiêu\nđã được phê duyệt" as TARGET
+
+package "Vùng dữ liệu và dịch vụ bảo mật" {
+  database "PostgreSQL 17\nNguồn sự thật nghiệp vụ\nV001 + V002 ZAP automation" as DB
+  storage "Kho artifact riêng\nraw / evidence / exports\nJSON và HTML bất biến" as STORE
+  component "IdP OIDC" as IDP
+  component "KMS / Secrets\nChỉ lưu secret reference" as KMS
+  component "OpenTelemetry\nLog/metric/trace đã lọc" as OTEL
+}
+
+USER --> BROWSER
+BROWSER --> EDGE : HTTPS
+EDGE --> UI : static assets
+EDGE --> API : REST / upload stream
+UI --> API : API / session an toàn
+API --> IDP : OIDC
+API --> DB : api_runtime + audit_writer
+API --> STORE : tải/stream theo quyền
+API --> KMS : workload identity
+API --> OTEL : telemetry đã lọc
+
+WORKER --> DB : lịch đến hạn, lease,\ntrạng thái và import_batch
+WORKER --> KMS : lấy secret theo reference
+WORKER --> RUNNER : plan + lệnh chạy/dừng
+RUNNER --> ZAP : container biệt lập
+ZAP --> TARGET : spider / passive / active scan
+ZAP --> WORKER : Traditional JSON / HTML
+WORKER --> STORE : lưu artifact + checksum
+WORKER --> DB : zap_execution + metadata
+WORKER --> OTEL : telemetry đã che
+
+note bottom of API
+API không giữ Docker socket,
+không trực tiếp điều khiển ZAP.
+end note
+
+note bottom of ZAP
+Không kết nối PostgreSQL.
+Không nhận YAML tùy ý từ người dùng.
+end note
+@enduml

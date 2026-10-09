@@ -1,0 +1,49 @@
+@startuml
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 11
+skinparam stateBackgroundColor white
+skinparam stateBorderColor #334155
+skinparam ArrowColor #475569
+title Sơ đồ trạng thái — phiên thực thi ZAP tự động
+
+[*] --> Queued : lịch đến hạn / yêu cầu xác minh
+Queued --> PreparingPlan : worker nhận lease
+PreparingPlan --> StartingRunner : plan hợp lệ, secret sẵn sàng
+StartingRunner --> Running : runner/container khởi động
+Running --> CollectingReport : quét hoàn tất
+CollectingReport --> ReportReceived : báo cáo hợp lệ, lưu artifact\nvà tạo import_batch Received
+ReportReceived --> [*]
+
+Queued --> Cancelled : yêu cầu hủy trước khi chạy
+PreparingPlan --> Cancelled : yêu cầu dừng
+StartingRunner --> Cancelled : dừng runner
+Running --> Cancelled : dừng có thẩm quyền
+CollectingReport --> Cancelled : hủy tiếp nhận
+
+PreparingPlan --> Failed : cấu hình/phạm vi/secret lỗi
+StartingRunner --> Failed : không khởi động được runner
+Running --> Failed : ZAP hoặc kết nối lỗi
+CollectingReport --> Failed : báo cáo không hợp lệ
+
+StartingRunner --> TimedOut : quá thời gian khởi động
+Running --> TimedOut : quá thời gian quét / mất heartbeat
+CollectingReport --> TimedOut : quá thời gian sinh hoặc nhận báo cáo
+
+Failed --> [*]
+TimedOut --> [*]
+Cancelled --> [*]
+
+note right of ReportReceived
+  Cùng giao dịch:
+  - scan_occurrence = Completed
+  - zap_artifact được lưu bất biến
+  - import_batch = Received
+end note
+
+note bottom of Failed
+  Không tự retry khi trạng thái trước đó không rõ.
+  Muốn chạy lại phải tạo phiên thực thi mới theo thẩm quyền.
+end note
+@enduml
+

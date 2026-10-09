@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="3000" height="1450" viewBox="0 0 3000 1450">
+<defs><marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L12,6 L0,12 z" fill="#475569"/></marker></defs>
+<rect width="3000" height="1450" fill="#FFFFFF"/>
+<text x="1500.0" y="68" text-anchor="middle" font-family="Arial" font-size="34" font-weight="700" fill="#111827">Sơ đồ trạng thái — phiên thực thi ZAP tự động</text>
+<text x="1500.0" y="98" text-anchor="middle" font-family="Arial" font-size="20" font-weight="400" fill="#64748B">zap_execution tách trạng thái kỹ thuật khỏi scan_occurrence</text>
+<rect x="115" y="280" width="330" height="180" rx="28" fill="#FFFFFF" stroke="#475569" stroke-width="4"/>
+<text x="280.0" y="334" text-anchor="middle" font-family="Arial" font-size="24" font-weight="700" fill="#111827">Queued</text>
+<text x="280.0" y="374" text-anchor="middle" font-family="Arial" font-size="19" font-weight="400" fill="#64748B">Chờ worker nhận lease</text>
+<rect x="555" y="280" width="360" height="180" rx="28" fill="#FFFFFF" stroke="#475569" stroke-width="4"/>
+<text x="735.0" y="334" text-anchor="middle" font-family="Arial" font-size="24" font-weight="700" fill="#111827">Preparing Plan</text>
+<text x="735.0" y="374" text-anchor="middle" font-family="Arial" font-size="19" font-weight="400" fill="#64748B">Kiểm scope/profile</text>
+<text x="735.0" y="399" text-anchor="middle" font-family="Arial" font-size="19" font-weight="400" fill="#64748B">Sinh Automation Plan</text>
+<rect x="1025" y="280" width="360" height="180" rx="28" fill="#FFFFFF" stroke="#475569" stroke-width="4"/>
+<text x="1205.0" y="334" text-anchor="middle" font-family="Arial" font-size="24" font-weight="700" fill="#111827">Starting Runner</text>
+<text x="1205.0" y="374" text-anchor="middle" font-family="Arial" font-size="19" font-weight="400" fill="#64748B">Khởi động runner</text>
+<text x="1205.0" y="399" text-anchor="middle" font-family="Arial" font-size="19" font-weight="400" fill="#64748B">với image khóa digest</text>
+<rect x="1495" y="280" width="330" height="180" rx="28" fill="#FFFFFF" stroke="#475569" stroke-width="4"/>
+<text x="1660.0" y="334" text-anchor="middle" font-family="Arial" font-size="24" font-weight="700" fill="#111827">Running</text>
+<text x="1660.0" y="374" text-anchor="middle" font-family="Arial" font-size="19" font-weight="400" fill="#64748B">Spider / passive /</text>
+<text x="1660.0" y="399" text-anchor="middle" font-family="Arial" font-size="19" font-weight="400" fill="#64748B">active scan được duyệt</text>
+<rect x="1935" y="280" width="360" height="180" rx="28" fill="#FFFFFF" stroke="#475569" stroke-width="4"/>
+<text x="2115.0" y="334" text-anchor="middle" font-family="Arial" font-size="24" font-weight="700" fill="#111827">Collecting Report</text>
+<text x="2115.0" y="374" text-anchor="middle" font-family="Arial" font-size="19" font-weight="400" fill="#64748B">Sinh và kiểm</text>
+<text x="2115.0" y="399" text-anchor="middle" font-family="Arial" font-size="19" font-weight="400" fill="#64748B">JSON / HTML</text>
+<rect x="2405" y="280" width="360" height="180" rx="28" fill="#F0FDF4" stroke="#475569" stroke-width="4"/>
+<text x="2585.0" y="334" text-anchor="middle" font-family="Arial" font-size="24" font-weight="700" fill="#111827">Report Received</text>
+<text x="2585.0" y="374" text-anchor="middle" font-family="Arial" font-size="19" font-weight="400" fill="#64748B">Lưu artifact +</text>
+<text x="2585.0" y="399" text-anchor="middle" font-family="Arial" font-size="19" font-weight="400" fill="#64748B">import_batch Received</text>
+<circle cx="55" cy="370" r="18" fill="#111827" stroke="#111827" stroke-width="3"/>
+<polyline points="73,370 115,370.0" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<polyline points="445,370.0 555,370.0" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<polyline points="915,370.0 1025,370.0" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<polyline points="1385,370.0 1495,370.0" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<polyline points="1825,370.0 1935,370.0" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<polyline points="2295,370.0 2405,370.0" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<circle cx="2935" cy="370" r="22" fill="#FFFFFF" stroke="#111827" stroke-width="4"/>
+<circle cx="2935" cy="370" r="12" fill="#111827" stroke="#111827" stroke-width="3"/>
+<polyline points="2765,370.0 2913,370" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round"/>
+<rect x="470" y="790" width="420" height="150" rx="22" fill="#FEF2F2" stroke="#475569" stroke-width="4"/>
+<text x="494" y="830" text-anchor="start" font-family="Arial" font-size="22" font-weight="700" fill="#2563EB">KẾT THÚC LỖI</text>
+<text x="680.0" y="865" text-anchor="middle" font-family="Arial" font-size="23" font-weight="700" fill="#111827">Failed</text>
+<rect x="1040" y="790" width="420" height="150" rx="22" fill="#FFF7ED" stroke="#475569" stroke-width="4"/>
+<text x="1064" y="830" text-anchor="start" font-family="Arial" font-size="22" font-weight="700" fill="#2563EB">KẾT THÚC QUÁ HẠN</text>
+<text x="1250.0" y="865" text-anchor="middle" font-family="Arial" font-size="23" font-weight="700" fill="#111827">Timed Out</text>
+<rect x="1710" y="790" width="420" height="150" rx="22" fill="#F8FAFC" stroke="#475569" stroke-width="4"/>
+<text x="1734" y="830" text-anchor="start" font-family="Arial" font-size="22" font-weight="700" fill="#2563EB">KẾT THÚC HỦY</text>
+<text x="1920.0" y="865" text-anchor="middle" font-family="Arial" font-size="23" font-weight="700" fill="#111827">Cancelled</text>
+<polyline points="735.0,460 735.0,620 680.0,620 680.0,790" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)" stroke-dasharray="10 8"/>
+<polyline points="1205.0,460 1205.0,620 680.0,620 680.0,790" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)" stroke-dasharray="10 8"/>
+<polyline points="1660.0,460 1660.0,620 1250.0,620 1250.0,790" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)" stroke-dasharray="10 8"/>
+<polyline points="2115.0,460 2115.0,620 680.0,620 680.0,790" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)" stroke-dasharray="10 8"/>
+<polyline points="1205.0,460 1205.0,690 1250.0,690 1250.0,790" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)" stroke-dasharray="10 8"/>
+<polyline points="280.0,460 280.0,720 1920.0,720 1920.0,790" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)" stroke-dasharray="10 8"/>
+<polyline points="1660.0,460 1660.0,680 1920.0,680 1920.0,790" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)" stroke-dasharray="10 8"/>
+<rect x="250" y="1080" width="2500" height="240" rx="18" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="3"/>
+<text x="300" y="1133" text-anchor="start" font-family="Arial" font-size="23" font-weight="700" fill="#2563EB">Ràng buộc chuyển trạng thái</text>
+<text x="300" y="1181" text-anchor="start" font-family="Arial" font-size="21" font-weight="400" fill="#111827">• Chỉ Report Received mới liên kết import_batch và hoàn tất scan_occurrence.</text>
+<text x="300" y="1212" text-anchor="start" font-family="Arial" font-size="21" font-weight="400" fill="#111827">• Failed, Timed Out và Cancelled phải có finished_at; lỗi phải có failure_code đã che dữ liệu nhạy cảm.</text>
+<text x="300" y="1243" text-anchor="start" font-family="Arial" font-size="21" font-weight="400" fill="#111827">• Không tự retry một phiên đã bắt đầu gửi request; chạy lại phải tạo phiên mới theo thẩm quyền.</text>
+<text x="300" y="1274" text-anchor="start" font-family="Arial" font-size="21" font-weight="400" fill="#111827">• Lease/heartbeat hết hạn chuyển sang Failed hoặc Timed Out để tránh quét trùng âm thầm.</text>
+</svg>

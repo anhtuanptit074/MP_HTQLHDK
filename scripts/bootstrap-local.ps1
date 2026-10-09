@@ -1,6 +1,8 @@
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
+. (Join-Path $PSScriptRoot 'use-local-tools.ps1')
+
 $requirements = @(
     @{ Name = 'Git'; Command = 'git' },
     @{ Name = 'Node.js'; Command = 'node' },
@@ -26,4 +28,3 @@ if (-not (Test-Path -LiteralPath (Join-Path $root '.env.local'))) {
 }
 
 Write-Output 'PASS: required developer tools are available.'
-

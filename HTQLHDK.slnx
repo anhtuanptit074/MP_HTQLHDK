@@ -1,7 +1,8 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/backend/Htqlhdk.Api/Htqlhdk.Api.csproj" />
+    <Project Path="src/backend/Htqlhdk.Core/Htqlhdk.Core.csproj" />
     <Project Path="src/backend/Htqlhdk.Worker/Htqlhdk.Worker.csproj" />
+    <Project Path="tests/Htqlhdk.Worker.Tests/Htqlhdk.Worker.Tests.csproj" />
   </Folder>
 </Solution>
-

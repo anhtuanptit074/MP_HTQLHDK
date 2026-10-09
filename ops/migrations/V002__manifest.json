@@ -1,0 +1,12 @@
+{
+  "version": "V002",
+  "description": "ZAP Automation Framework profiles, executions, artifacts and schedule binding",
+  "immutable": true,
+  "files": [
+    {
+      "path": "database/sql/04_zap_automation.sql",
+      "sha256": "26d4e880e298a794ddee76d8c90b95dece2d8eec5105c4205c744f7e7f74832d"
+    }
+  ],
+  "rollback": "No automatic production down migration. Disable automation_enabled and use a reviewed forward-fix."
+}

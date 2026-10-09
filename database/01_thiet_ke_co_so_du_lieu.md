@@ -122,12 +122,4 @@ stateDiagram-v2
 
 Tên trong sơ đồ viết liền để dễ hiển thị; các giá trị trong SQL có khoảng trắng đúng theo tài liệu nguồn. Không tự tạo cạnh False Positive → Reopened, Risk Accepted → Pending Risk Acceptance hoặc Reopened → Risk Accepted. Kết quả sai tái xuất hiện được ghi Recheck và chờ ATTT rà soát theo nguồn.
 
-## 6. Vì sao dừng ở 27 bảng?
 
-Những phần tách riêng trước đây có thể gộp đã được gộp: cấu hình vai trò/quyền cố định; đơn vị mô tả; metadata báo cáo gốc; mục tiêu cấu hình quét; lịch sử phân công/cập nhật/hạn; đề nghị/quyết định rủi ro; audit/workflow; tệp xuất/liên kết tải.
-
-Tiếp tục gộp Finding với Occurrence/Observation sẽ làm khó chống trùng và giữ nhiều nguồn. Gộp lịch với lần quét làm lẫn cấu hình và kết quả thực hiện. Gộp yêu cầu với kết quả xác minh dễ ghi đè các lần xác minh. Gộp mọi bằng chứng vào một cột JSON làm mất FK và kiểm dữ liệu cùng Finding. Vì vậy chưa chọn cách ép xuống 20–25 bảng bằng các phép gộp này.
-
-Mô hình tối ưu cho quy mô đề tài, không tuyên bố mọi bảng đều đạt chuẩn 3NF nghiêm ngặt. Hai danh sách `target_urls text[]` là cấu hình URL nhỏ, không tham chiếu thực thể; tên đơn vị là giá trị mô tả; `ticket_event` lưu snapshot lịch sử có chủ đích. Các quan hệ cần kiểm toàn vẹn như quyền, phạm vi, kết quả nguồn và tài sản trong báo cáo vẫn là bảng quan hệ. Ít bảng không tự bảo đảm truy vấn nhanh hơn; đã có chỉ mục cho các khóa tra cứu chính, chưa có benchmark tải thật.
-
-Chi tiết từng phép gộp và đối chiếu nguồn: [43 → 27](06_doi_chieu_pham_vi.md). Điều kiện phải thực hiện ở máy chủ: [ràng buộc và giao dịch](04_rang_buoc_va_giao_dich.md).

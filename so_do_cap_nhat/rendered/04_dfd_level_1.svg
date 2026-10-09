@@ -1,0 +1,118 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2800" height="1800" viewBox="0 0 2800 1800">
+<defs><marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L12,6 L0,12 z" fill="#475569"/></marker></defs>
+<rect width="2800" height="1800" fill="#FFFFFF"/>
+<text x="1400.0" y="68" text-anchor="middle" font-family="Arial" font-size="34" font-weight="700" fill="#111827">Sơ đồ luồng dữ liệu mức 1 — HTQLHDK tích hợp ZAP tự động</text>
+<text x="1400.0" y="98" text-anchor="middle" font-family="Arial" font-size="20" font-weight="400" fill="#64748B">Bốn tiến trình nghiệp vụ chính; phân quyền, audit và thông báo là kiểm soát xuyên suốt</text>
+<rect x="60" y="190" width="330" height="110" rx="8" fill="#F8FAFC" stroke="#475569" stroke-width="3"/>
+<text x="225.0" y="236" text-anchor="middle" font-family="Arial" font-size="22" font-weight="700" fill="#111827">Chủ sở hữu</text>
+<text x="225.0" y="265" text-anchor="middle" font-family="Arial" font-size="22" font-weight="700" fill="#111827">tài sản</text>
+<rect x="60" y="500" width="330" height="110" rx="8" fill="#F8FAFC" stroke="#475569" stroke-width="3"/>
+<text x="225.0" y="546" text-anchor="middle" font-family="Arial" font-size="22" font-weight="700" fill="#111827">Chuyên viên</text>
+<text x="225.0" y="575" text-anchor="middle" font-family="Arial" font-size="22" font-weight="700" fill="#111827">ATTT</text>
+<rect x="60" y="820" width="330" height="110" rx="8" fill="#F8FAFC" stroke="#475569" stroke-width="3"/>
+<text x="225.0" y="866" text-anchor="middle" font-family="Arial" font-size="22" font-weight="700" fill="#111827">Nhóm vận hành</text>
+<text x="225.0" y="895" text-anchor="middle" font-family="Arial" font-size="22" font-weight="700" fill="#111827">tích hợp ZAP</text>
+<rect x="60" y="1140" width="330" height="110" rx="8" fill="#F8FAFC" stroke="#475569" stroke-width="3"/>
+<text x="225.0" y="1186" text-anchor="middle" font-family="Arial" font-size="22" font-weight="700" fill="#111827">Nhóm khắc phục</text>
+<text x="225.0" y="1215" text-anchor="middle" font-family="Arial" font-size="22" font-weight="700" fill="#111827">kỹ thuật</text>
+<rect x="60" y="1450" width="330" height="110" rx="8" fill="#F8FAFC" stroke="#475569" stroke-width="3"/>
+<text x="225.0" y="1496" text-anchor="middle" font-family="Arial" font-size="22" font-weight="700" fill="#111827">Người phê duyệt</text>
+<text x="225.0" y="1525" text-anchor="middle" font-family="Arial" font-size="22" font-weight="700" fill="#111827">rủi ro</text>
+<rect x="590" y="180" width="500" height="160" rx="22" fill="#FFFFFF" stroke="#475569" stroke-width="4"/>
+<text x="614" y="220" text-anchor="start" font-family="Arial" font-size="22" font-weight="700" fill="#2563EB">P1</text>
+<text x="840.0" y="255" text-anchor="middle" font-family="Arial" font-size="23" font-weight="700" fill="#111827">Quản lý tài sản</text>
+<text x="840.0" y="285" text-anchor="middle" font-family="Arial" font-size="23" font-weight="700" fill="#111827">và phạm vi</text>
+<rect x="590" y="550" width="500" height="170" rx="22" fill="#FFFFFF" stroke="#475569" stroke-width="4"/>
+<text x="614" y="590" text-anchor="start" font-family="Arial" font-size="22" font-weight="700" fill="#2563EB">P2</text>
+<text x="840.0" y="625" text-anchor="middle" font-family="Arial" font-size="23" font-weight="700" fill="#111827">Lập lịch và</text>
+<text x="840.0" y="655" text-anchor="middle" font-family="Arial" font-size="23" font-weight="700" fill="#111827">điều phối ZAP</text>
+<rect x="590" y="930" width="500" height="170" rx="22" fill="#FFFFFF" stroke="#475569" stroke-width="4"/>
+<text x="614" y="970" text-anchor="start" font-family="Arial" font-size="22" font-weight="700" fill="#2563EB">P3</text>
+<text x="840.0" y="1005" text-anchor="middle" font-family="Arial" font-size="23" font-weight="700" fill="#111827">Tiếp nhận, kiểm tra</text>
+<text x="840.0" y="1035" text-anchor="middle" font-family="Arial" font-size="23" font-weight="700" fill="#111827">và chuẩn hóa báo cáo</text>
+<rect x="590" y="1320" width="500" height="180" rx="22" fill="#FFFFFF" stroke="#475569" stroke-width="4"/>
+<text x="614" y="1360" text-anchor="start" font-family="Arial" font-size="22" font-weight="700" fill="#2563EB">P4</text>
+<text x="840.0" y="1395" text-anchor="middle" font-family="Arial" font-size="23" font-weight="700" fill="#111827">Phân tích, khắc phục</text>
+<text x="840.0" y="1425" text-anchor="middle" font-family="Arial" font-size="23" font-weight="700" fill="#111827">và xác minh</text>
+<rect x="1370" y="120" width="540" height="160" rx="3" fill="#FFFFFF" stroke="#475569" stroke-width="3"/>
+<polyline points="1390,120 1390,280" fill="none" stroke="#475569" stroke-width="3" stroke-linejoin="round"/>
+<text x="1408" y="161" text-anchor="start" font-family="Arial" font-size="21" font-weight="700" fill="#2563EB">D1</text>
+<text x="1652.0" y="190" text-anchor="middle" font-family="Arial" font-size="20" font-weight="400" fill="#111827">Người dùng, nhóm, phạm vi quyền,</text>
+<text x="1652.0" y="216" text-anchor="middle" font-family="Arial" font-size="20" font-weight="400" fill="#111827">audit và thông báo</text>
+<rect x="1370" y="430" width="540" height="180" rx="3" fill="#FFFFFF" stroke="#475569" stroke-width="3"/>
+<polyline points="1390,430 1390,610" fill="none" stroke="#475569" stroke-width="3" stroke-linejoin="round"/>
+<text x="1408" y="471" text-anchor="start" font-family="Arial" font-size="21" font-weight="700" fill="#2563EB">D2</text>
+<text x="1652.0" y="500" text-anchor="middle" font-family="Arial" font-size="20" font-weight="400" fill="#111827">Tài sản, phạm vi,</text>
+<text x="1652.0" y="526" text-anchor="middle" font-family="Arial" font-size="20" font-weight="400" fill="#111827">hồ sơ ZAP và lịch</text>
+<rect x="1370" y="820" width="540" height="190" rx="3" fill="#FFFFFF" stroke="#475569" stroke-width="3"/>
+<polyline points="1390,820 1390,1010" fill="none" stroke="#475569" stroke-width="3" stroke-linejoin="round"/>
+<text x="1408" y="861" text-anchor="start" font-family="Arial" font-size="21" font-weight="700" fill="#2563EB">D3</text>
+<text x="1652.0" y="890" text-anchor="middle" font-family="Arial" font-size="20" font-weight="400" fill="#111827">Lần quét, phiên ZAP,</text>
+<text x="1652.0" y="916" text-anchor="middle" font-family="Arial" font-size="20" font-weight="400" fill="#111827">artifact và lô tiếp nhận</text>
+<rect x="1370" y="1240" width="540" height="200" rx="3" fill="#FFFFFF" stroke="#475569" stroke-width="3"/>
+<polyline points="1390,1240 1390,1440" fill="none" stroke="#475569" stroke-width="3" stroke-linejoin="round"/>
+<text x="1408" y="1281" text-anchor="start" font-family="Arial" font-size="21" font-weight="700" fill="#2563EB">D4</text>
+<text x="1652.0" y="1310" text-anchor="middle" font-family="Arial" font-size="20" font-weight="400" fill="#111827">Phát hiện, đánh giá, phiếu,</text>
+<text x="1652.0" y="1336" text-anchor="middle" font-family="Arial" font-size="20" font-weight="400" fill="#111827">bằng chứng và rủi ro</text>
+<rect x="2260" y="530" width="420" height="160" rx="8" fill="#F8FAFC" stroke="#475569" stroke-width="3"/>
+<text x="2470.0" y="576" text-anchor="middle" font-family="Arial" font-size="22" font-weight="700" fill="#111827">OWASP ZAP</text>
+<text x="2470.0" y="605" text-anchor="middle" font-family="Arial" font-size="22" font-weight="700" fill="#111827">Hệ thống bên ngoài</text>
+<text x="2470" y="748" text-anchor="middle" font-family="Arial" font-size="18" font-weight="700" fill="#B45309">Không truy cập trực tiếp cơ sở dữ liệu</text>
+<polyline points="390,245.0 590,260.0" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="398.0" y="233.5" width="184" height="38" rx="0" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="0"/>
+<text x="490.0" y="255.5" text-anchor="middle" font-family="Arial" font-size="16" font-weight="400" fill="#64748B">khai báo / xác nhận</text>
+<polyline points="390,555.0 480,555 480,260 590,260.0" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="388" y="241" width="184" height="38" rx="0" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="0"/>
+<text x="480" y="263" text-anchor="middle" font-family="Arial" font-size="16" font-weight="400" fill="#64748B">phê duyệt phạm vi</text>
+<polyline points="1090,260.0 1210,260 1210,520 1370,520.0" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="1118" y="501" width="184" height="38" rx="0" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="0"/>
+<text x="1210" y="523" text-anchor="middle" font-family="Arial" font-size="16" font-weight="400" fill="#64748B">asset + scope</text>
+<polyline points="390,555.0 500,555 500,635 590,635.0" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="408" y="616" width="184" height="38" rx="0" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="0"/>
+<text x="500" y="638" text-anchor="middle" font-family="Arial" font-size="16" font-weight="400" fill="#64748B">lịch / hồ sơ</text>
+<polyline points="390,875.0 520,875 520,675 590,635.0" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="428" y="656" width="184" height="38" rx="0" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="0"/>
+<text x="520" y="678" text-anchor="middle" font-family="Arial" font-size="16" font-weight="400" fill="#64748B">cấu hình / ngoại lệ</text>
+<polyline points="1370,520.0 1090,635.0" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="1138.0" y="558.5" width="184" height="38" rx="0" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="0"/>
+<text x="1230.0" y="580.5" text-anchor="middle" font-family="Arial" font-size="16" font-weight="400" fill="#64748B">scope + profile</text>
+<polyline points="1090,635.0 2070,610 2260,610.0" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="1978" y="591" width="184" height="38" rx="0" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="0"/>
+<text x="2070" y="613" text-anchor="middle" font-family="Arial" font-size="16" font-weight="400" fill="#64748B">plan / chạy / dừng</text>
+<polyline points="2470.0,690 2470,780 1160,780 1160,680 1090,635.0" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="1068" y="761" width="184" height="38" rx="0" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="0"/>
+<text x="1160" y="783" text-anchor="middle" font-family="Arial" font-size="16" font-weight="400" fill="#64748B">tiến độ / báo cáo</text>
+<polyline points="1090,635.0 1210,680 1210,915 1370,915.0" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="1118" y="896" width="184" height="38" rx="0" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="0"/>
+<text x="1210" y="918" text-anchor="middle" font-family="Arial" font-size="16" font-weight="400" fill="#64748B">scan + execution</text>
+<polyline points="1370,915.0 1090,1015.0" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="1138.0" y="946.0" width="184" height="38" rx="0" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="0"/>
+<text x="1230.0" y="968.0" text-anchor="middle" font-family="Arial" font-size="16" font-weight="400" fill="#64748B">báo cáo gốc</text>
+<polyline points="1090,1015.0 1210,1015 1210,1340 1370,1340.0" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="1118" y="1321" width="184" height="38" rx="0" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="0"/>
+<text x="1210" y="1343" text-anchor="middle" font-family="Arial" font-size="16" font-weight="400" fill="#64748B">finding chuẩn hóa</text>
+<polyline points="590,1015.0 500,1015 500,875 390,875.0" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="408" y="856" width="184" height="38" rx="0" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="0"/>
+<text x="500" y="878" text-anchor="middle" font-family="Arial" font-size="16" font-weight="400" fill="#64748B">lỗi tiếp nhận</text>
+<polyline points="390,555.0 460,555 460,1390 590,1410.0" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="368" y="1371" width="184" height="38" rx="0" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="0"/>
+<text x="460" y="1393" text-anchor="middle" font-family="Arial" font-size="16" font-weight="400" fill="#64748B">severity / đóng mở</text>
+<polyline points="390,1195.0 500,1195 500,1420 590,1410.0" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="408" y="1401" width="184" height="38" rx="0" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="0"/>
+<text x="500" y="1423" text-anchor="middle" font-family="Arial" font-size="16" font-weight="400" fill="#64748B">tiến độ / bằng chứng</text>
+<polyline points="390,1505.0 590,1410.0" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="398.0" y="1438.5" width="184" height="38" rx="0" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="0"/>
+<text x="490.0" y="1460.5" text-anchor="middle" font-family="Arial" font-size="16" font-weight="400" fill="#64748B">quyết định rủi ro</text>
+<polyline points="1090,1410.0 1370,1340.0" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="1138.0" y="1356.0" width="184" height="38" rx="0" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="0"/>
+<text x="1230.0" y="1378.0" text-anchor="middle" font-family="Arial" font-size="16" font-weight="400" fill="#64748B">review / ticket / risk</text>
+<polyline points="840.0,1320 1160,1210 1160,760 840,760 840.0,720" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="1068" y="741" width="184" height="38" rx="0" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="0"/>
+<text x="1160" y="763" text-anchor="middle" font-family="Arial" font-size="16" font-weight="400" fill="#64748B">yêu cầu quét xác minh</text>
+<polyline points="1640,280 1640,350 1190,350 1190,1430" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" stroke-dasharray="10 8"/>
+<text x="1190" y="383" text-anchor="middle" font-family="Arial" font-size="18" font-weight="700" fill="#2563EB">Kiểm tra quyền + ghi audit cho P1–P4</text>
+<polyline points="1190,260.0 1090,260.0" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)" stroke-dasharray="10 8"/>
+<polyline points="1190,635.0 1090,635.0" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)" stroke-dasharray="10 8"/>
+<polyline points="1190,1015.0 1090,1015.0" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)" stroke-dasharray="10 8"/>
+<polyline points="1190,1410.0 1090,1410.0" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)" stroke-dasharray="10 8"/>
+</svg>

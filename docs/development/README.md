@@ -1,4 +1,4 @@
-# Hồ sơ phát triển — Giai đoạn 10
+# Hồ sơ phát triển
 
 | Sản phẩm | Tài liệu/cấu hình |
 |---|---|
@@ -11,7 +11,8 @@
 | Branch/PR/review | [06 — Branch and review](06_branch_and_review.md) |
 | Ma trận môi trường | [07 — Environment matrix](07_environment_matrix.md) |
 | Báo cáo xác minh baseline | [08 — Verification report](08_verification_report.md) |
+| Kết quả chạy thử hiện hành | [09 — Local readiness](09_local_readiness.md) |
+| Chức năng, quyền và kiểm thử 13 bảng | [10 — Core13 application](10_core13_application.md) |
 | Build/test/security pipeline | `.github/workflows/` và `scripts/test.ps1` |
 
-Baseline này chuẩn bị nền tảng, không đánh dấu các chức năng F-01–F-04 là đã lập trình.
-
+Các tài liệu 01–08 giữ hồ sơ baseline trước triển khai. Bản ứng dụng hiện hành đã triển khai nghiệp vụ theo phạm vi 13 bảng; đọc tài liệu 09–10 để chạy thử.

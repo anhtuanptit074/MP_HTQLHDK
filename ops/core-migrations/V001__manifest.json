@@ -1,0 +1,6 @@
+{
+  "version": "V001",
+  "model": "core13",
+  "sha256": "f69549441b594309601cb42b2bd896492c1a8096bb02e6826b9eaaa46b9d0187",
+  "file": "ops/core-migrations/V001__core13.sql"
+}

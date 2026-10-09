@@ -1,0 +1,173 @@
+@startuml
+hide circle
+skinparam linetype ortho
+skinparam shadowing false
+skinparam entity {
+  BackgroundColor White
+  BorderColor #334155
+  ArrowColor #475569
+}
+
+entity app_user {
+  * id : bigint <<PK>>
+  --
+  username : varchar <<UK>>
+  account_kind : varchar
+  is_active : boolean
+}
+
+entity user_role {
+  * id : bigint <<PK>>
+  --
+  user_id : bigint <<FK>>
+  role_code : varchar
+  asset_id : bigint <<FK, nullable>>
+  granted_by : bigint <<FK>>
+  revoked_by : bigint <<FK, nullable>>
+}
+
+entity asset {
+  * id : bigint <<PK>>
+  --
+  code : varchar <<UK>>
+  base_url : text
+  owner_id : bigint <<FK>>
+  security_officer_id : bigint <<FK>>
+  status : varchar
+  created_by : bigint <<FK>>
+}
+
+entity asset_scope_revision {
+  * id : bigint <<PK>>
+  --
+  asset_id : bigint <<FK>>
+  version_no : integer <<UK>>
+  status : varchar
+  effective_from : timestamptz
+  effective_until : timestamptz
+}
+
+entity asset_scope_rule {
+  * id : bigint <<PK>>
+  --
+  scope_id : bigint <<FK>>
+  effect : varchar
+  target_type : varchar
+  target_value : text
+  match_mode : varchar
+}
+
+entity asset_scan_window {
+  * id : bigint <<PK>>
+  --
+  scope_id : bigint <<FK>>
+  weekday_iso : smallint
+  start_time : time
+  end_time : time
+  timezone : text
+}
+
+entity zap_scan_profile {
+  * id : bigint <<PK>>
+  --
+  code : varchar <<UK>>
+  version_no : integer <<UK>>
+  status : varchar
+  active_scan_enabled : boolean
+  service_user_id : bigint <<FK>>
+}
+
+entity scan_plan {
+  * id : bigint <<PK>>
+  --
+  code : varchar <<UK>>
+  version_no : integer <<UK>>
+  plan_kind : varchar
+  scope_id : bigint <<FK>>
+  zap_profile_id : bigint <<FK>>
+  operator_id : bigint <<FK>>
+  remediation_ticket_id : bigint <<FK, nullable>>
+  status : varchar
+}
+
+entity scan_run {
+  * id : bigint <<PK>>
+  --
+  plan_id : bigint <<FK>>
+  code : varchar <<UK>>
+  scheduled_for : timestamptz
+  scan_status : varchar
+  report_status : varchar
+  report_object_key : text
+  report_sha256 : char(64)
+  verification_outcome : varchar
+  evaluated_by : bigint <<FK, nullable>>
+}
+
+entity finding {
+  * id : bigint <<PK>>
+  --
+  asset_id : bigint <<FK>>
+  code : varchar <<UK>>
+  fingerprint : char(64) <<UK>>
+  final_severity : varchar
+  status : varchar
+  assessed_by : bigint <<FK, nullable>>
+  decision_by : bigint <<FK, nullable>>
+}
+
+entity finding_occurrence {
+  * id : bigint <<PK>>
+  --
+  finding_id : bigint <<FK>>
+  scan_run_id : bigint <<FK>>
+  record_locator : text <<UK>>
+  source_severity : varchar
+  source_confidence : smallint
+}
+
+entity remediation_ticket {
+  * id : bigint <<PK>>
+  --
+  finding_id : bigint <<FK, UK>>
+  code : varchar <<UK>>
+  assignee_id : bigint <<FK>>
+  assigned_by : bigint <<FK>>
+  due_at : timestamptz
+  progress_percent : smallint
+}
+
+entity audit_log {
+  * id : bigint <<PK>>
+  --
+  actor_id : bigint <<FK, nullable>>
+  actor_kind : varchar
+  action : varchar
+  object_type : varchar
+  object_id : text
+  correlation_id : uuid
+}
+
+app_user ||--o{ user_role : user_id
+asset |o--o{ user_role : asset_id
+app_user ||--o{ asset : owner/security/creator
+asset ||--o{ asset_scope_revision : asset_id
+asset_scope_revision ||--o{ asset_scope_rule : scope_id
+asset_scope_revision ||--o{ asset_scan_window : scope_id
+app_user ||--o{ zap_scan_profile : service/create/approve
+asset_scope_revision ||--o{ scan_plan : scope_id
+zap_scan_profile ||--o{ scan_plan : profile_id
+app_user ||--o{ scan_plan : operator/create/approve
+finding ||--o| remediation_ticket : finding_id
+remediation_ticket |o--o{ scan_plan : verification
+scan_plan ||--o{ scan_run : plan_id
+asset ||--o{ finding : asset_id
+finding ||--o{ finding_occurrence : finding_id
+scan_run ||--o{ finding_occurrence : scan_run_id
+app_user ||--o{ finding : assess/decide
+app_user ||--o{ remediation_ticket : assign/update
+app_user |o--o{ scan_run : evaluate
+app_user |o--o{ audit_log : actor_id
+
+@enduml
+

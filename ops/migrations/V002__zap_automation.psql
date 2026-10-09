@@ -1,0 +1,51 @@
+\set ON_ERROR_STOP on
+\echo 'Applying HTQLHDK V002 ZAP Automation Framework integration'
+
+SELECT pg_advisory_lock(hashtextextended('htqlhdk:migration', 0));
+
+SELECT EXISTS (
+    SELECT 1 FROM htqlhdk_migration.schema_migration
+    WHERE version = 'V001' AND status = 'Applied'
+) AS baseline_applied,
+EXISTS (
+    SELECT 1 FROM htqlhdk_migration.schema_migration
+    WHERE version = 'V002' AND status = 'Applied'
+) AS already_applied,
+EXISTS (
+    SELECT 1 FROM htqlhdk_migration.schema_migration
+    WHERE version = 'V002' AND status <> 'Applied'
+) AS incomplete \gset
+
+\if :baseline_applied
+\else
+    \echo 'ERROR: V001 must be applied before V002.'
+    \quit 3
+\endif
+
+\if :incomplete
+    \echo 'ERROR: V002 has an incomplete prior attempt. Follow the recovery runbook.'
+    \quit 3
+\endif
+
+\if :already_applied
+    \echo 'V002 already applied; no changes made.'
+\else
+    INSERT INTO htqlhdk_migration.schema_migration (
+        version, description, status, schema_sha256, guards_sha256, reference_sha256
+    ) VALUES (
+        'V002',
+        'ZAP Automation Framework profiles, executions, artifacts and schedule binding',
+        'Running',
+        '26d4e880e298a794ddee76d8c90b95dece2d8eec5105c4205c744f7e7f74832d',
+        '26d4e880e298a794ddee76d8c90b95dece2d8eec5105c4205c744f7e7f74832d',
+        '26d4e880e298a794ddee76d8c90b95dece2d8eec5105c4205c744f7e7f74832d'
+    );
+
+    \ir ../../database/sql/04_zap_automation.sql
+
+    UPDATE htqlhdk_migration.schema_migration
+    SET status = 'Applied', applied_at = CURRENT_TIMESTAMP
+    WHERE version = 'V002' AND status = 'Running';
+\endif
+
+SELECT pg_advisory_unlock(hashtextextended('htqlhdk:migration', 0));

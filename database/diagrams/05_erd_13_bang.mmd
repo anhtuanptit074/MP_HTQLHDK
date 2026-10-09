@@ -1,0 +1,138 @@
+erDiagram
+    app_user {
+        bigint id PK
+        varchar username UK
+        varchar account_kind
+        boolean is_active
+    }
+    user_role {
+        bigint id PK
+        bigint user_id FK
+        varchar role_code
+        bigint asset_id FK
+        bigint granted_by FK
+        bigint revoked_by FK
+    }
+    asset {
+        bigint id PK
+        varchar code UK
+        text base_url
+        bigint owner_id FK
+        bigint security_officer_id FK
+        varchar status
+        bigint created_by FK
+    }
+    asset_scope_revision {
+        bigint id PK
+        bigint asset_id FK
+        integer version_no UK
+        varchar status
+        timestamptz effective_from
+        timestamptz effective_until
+    }
+    asset_scope_rule {
+        bigint id PK
+        bigint scope_id FK
+        varchar effect
+        varchar target_type
+        text target_value
+        varchar match_mode
+    }
+    asset_scan_window {
+        bigint id PK
+        bigint scope_id FK
+        smallint weekday_iso
+        time start_time
+        time end_time
+        text timezone
+    }
+    zap_scan_profile {
+        bigint id PK
+        varchar code UK
+        integer version_no UK
+        varchar status
+        boolean active_scan_enabled
+        bigint service_user_id FK
+    }
+    scan_plan {
+        bigint id PK
+        varchar code UK
+        integer version_no UK
+        varchar plan_kind
+        bigint scope_id FK
+        bigint zap_profile_id FK
+        bigint operator_id FK
+        bigint remediation_ticket_id FK
+        varchar status
+    }
+    scan_run {
+        bigint id PK
+        bigint plan_id FK
+        varchar code UK
+        timestamptz scheduled_for UK
+        varchar scan_status
+        varchar report_status
+        text report_object_key
+        char report_sha256
+        varchar verification_outcome
+        bigint evaluated_by FK
+    }
+    finding {
+        bigint id PK
+        bigint asset_id FK
+        varchar code UK
+        char fingerprint UK
+        varchar final_severity
+        varchar status
+        bigint assessed_by FK
+        bigint decision_by FK
+    }
+    finding_occurrence {
+        bigint id PK
+        bigint finding_id FK
+        bigint scan_run_id FK
+        text record_locator UK
+        varchar source_severity
+        smallint source_confidence
+    }
+    remediation_ticket {
+        bigint id PK
+        bigint finding_id FK,UK
+        varchar code UK
+        bigint assignee_id FK
+        bigint assigned_by FK
+        timestamptz due_at
+        smallint progress_percent
+    }
+    audit_log {
+        bigint id PK
+        bigint actor_id FK
+        varchar actor_kind
+        varchar action
+        varchar object_type
+        text object_id
+        uuid correlation_id
+    }
+
+    app_user ||--o{ user_role : "duoc_cap"
+    asset |o--o{ user_role : "gioi_han_asset"
+    app_user ||--o{ user_role : "cap_thu_hoi"
+    app_user ||--o{ asset : "owner_tao_ATTT"
+    asset ||--o{ asset_scope_revision : "co_phien_ban"
+    asset_scope_revision ||--o{ asset_scope_rule : "co_luat"
+    asset_scope_revision ||--o{ asset_scan_window : "co_khung_gio"
+    app_user ||--o{ zap_scan_profile : "service_tao_duyet"
+    asset_scope_revision ||--o{ scan_plan : "pham_vi"
+    zap_scan_profile ||--o{ scan_plan : "cau_hinh_ZAP"
+    app_user ||--o{ scan_plan : "operator_tao_duyet"
+    finding ||--o| remediation_ticket : "co_phieu"
+    remediation_ticket |o--o{ scan_plan : "yeu_cau_xac_minh"
+    scan_plan ||--o{ scan_run : "sinh_lan_quet"
+    asset ||--o{ finding : "co_phat_hien"
+    finding ||--o{ finding_occurrence : "xuat_hien"
+    scan_run ||--o{ finding_occurrence : "ghi_nhan"
+    app_user ||--o{ finding : "danh_gia_quyet_dinh"
+    app_user ||--o{ remediation_ticket : "giao_va_xu_ly"
+    app_user |o--o{ scan_run : "danh_gia_xac_minh"
+    app_user |o--o{ audit_log : "thuc_hien"
+

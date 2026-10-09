@@ -1,0 +1,133 @@
+@startuml
+hide circle
+skinparam linetype ortho
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 11
+skinparam classBackgroundColor white
+skinparam classBorderColor #334155
+skinparam ArrowColor #475569
+left to right direction
+title ERD cốt lõi HTQLHDK — tích hợp tự động OWASP ZAP
+
+entity "Tài sản website\nasset" as asset {
+  * id : bigint <<PK>>
+  * code : varchar
+  current_scope_id : bigint <<FK>>
+  * status : asset_status
+}
+entity "Phiên bản phạm vi\nasset_scope_revision" as scope {
+  * id : bigint <<PK>>
+  * asset_id : bigint <<FK>>
+  * version_no : integer
+  * status : text
+}
+entity "Hồ sơ quét ZAP\nzap_scan_profile" as profile {
+  * id : bigint <<PK>>
+  * code : varchar
+  * version_no : integer
+  * status : zap_profile_status
+  * active_scan_enabled : boolean
+  * service_user_id : bigint <<FK>>
+}
+entity "Lịch quét\nscan_schedule" as schedule {
+  * id : bigint <<PK>>
+  * asset_id : bigint <<FK>>
+  * scope_id : bigint <<FK>>
+  zap_profile_id : bigint <<FK>>
+  * automation_enabled : boolean
+  * next_due_at : timestamptz
+  * status : schedule_status
+}
+entity "Lần quét nghiệp vụ\nscan_occurrence" as scan {
+  * id : bigint <<PK>>
+  * asset_id : bigint <<FK>>
+  * scope_id : bigint <<FK>>
+  schedule_id : bigint <<FK>>
+  * purpose : scan_purpose
+  * status : scan_status
+}
+entity "Phiên thực thi ZAP\nzap_execution" as execution {
+  * id : bigint <<PK>>
+  * scan_id : bigint <<FK, UQ>>
+  * profile_id : bigint <<FK>>
+  import_batch_id : bigint <<FK, UQ>>
+  * status : zap_execution_status
+  * configuration_snapshot : jsonb
+}
+entity "Artifact báo cáo ZAP\nzap_artifact" as artifact {
+  * id : bigint <<PK>>
+  * execution_id : bigint <<FK>>
+  * artifact_kind : text
+  * object_key : text <<UQ>>
+  * sha256 : varchar
+}
+entity "Lô tiếp nhận\nimport_batch" as batch {
+  * id : bigint <<PK>>
+  * asset_id : bigint <<FK>>
+  * scan_id : bigint <<FK>>
+  * file_sha256 : varchar
+  * raw_object_key : text
+  * status : import_status
+}
+entity "Phát hiện\nfinding" as finding {
+  * id : bigint <<PK>>
+  * asset_id : bigint <<FK>>
+  * fingerprint : varchar
+  current_review_id : bigint <<FK>>
+  * status : finding_status
+}
+entity "Lần xuất hiện\nfinding_occurrence" as occurrence {
+  * id : bigint <<PK>>
+  * finding_id : bigint <<FK>>
+  * scan_id : bigint <<FK>>
+  * observed_at : timestamptz
+}
+entity "Đánh giá ATTT\nfinding_review" as review {
+  * id : bigint <<PK>>
+  * finding_id : bigint <<FK>>
+  proposed_severity : final_severity
+  * status : text
+}
+entity "Phiếu khắc phục\nremediation_ticket" as ticket {
+  * id : bigint <<PK>>
+  * finding_id : bigint <<FK>>
+  * code : varchar
+  current_event_id : bigint <<FK>>
+}
+entity "Yêu cầu xác minh\nverification_request" as verify_request {
+  * id : bigint <<PK>>
+  * finding_id : bigint <<FK>>
+  * ticket_id : bigint <<FK>>
+  * scope_id : bigint <<FK>>
+  * status : text
+}
+entity "Kết quả xác minh\nverification_result" as verify_result {
+  * id : bigint <<PK>>
+  * request_id : bigint <<FK>>
+  * scan_id : bigint <<FK>>
+  * batch_id : bigint <<FK>>
+  * outcome : text
+}
+
+asset ||--o{ scope : has_versions
+asset ||--o{ schedule : schedules
+scope ||--o{ schedule : approved_scope
+profile |o--o{ schedule : configures
+schedule |o--o{ scan : creates
+scan ||--o| execution : automated_run
+profile ||--o{ execution : profile_snapshot
+execution ||--o{ artifact : produces
+scan ||--o{ batch : receives
+batch |o--o| execution : accepted_report
+asset ||--o{ finding : owns
+finding ||--o{ occurrence : recurs
+scan ||--o{ occurrence : observes
+finding ||--o{ review : assessed
+finding ||--o{ ticket : remediated_by
+finding ||--o{ verify_request : requests
+ticket ||--o{ verify_request : after_fix
+verify_request ||--o{ verify_result : evaluated
+scan ||--o{ verify_result : verification_scan
+batch ||--o{ verify_result : evidence_batch
+@enduml

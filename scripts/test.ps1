@@ -5,6 +5,8 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
+. (Join-Path $PSScriptRoot 'use-local-tools.ps1')
+
 $root = Split-Path -Parent $PSScriptRoot
 
 if (-not (Get-Command dotnet -ErrorAction SilentlyContinue)) {
@@ -29,6 +31,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Backend dependency restore failed.' }
     & dotnet build HTQLHDK.slnx --configuration Release --no-restore
     if ($LASTEXITCODE -ne 0) { throw 'Backend build failed.' }
+    & dotnet test HTQLHDK.slnx --configuration Release --no-build --filter 'TestCategory!=DatabaseIntegration'
+    if ($LASTEXITCODE -ne 0) { throw 'Backend tests failed.' }
 
     Push-Location 'src/frontend'
     try {
@@ -48,6 +52,7 @@ try {
     if ($IncludeDatabase) {
         & (Join-Path $PSScriptRoot 'migrate.ps1') -LoadTestFixture
         if ($LASTEXITCODE -ne 0) { throw 'Database migration/fixture test failed.' }
+        & (Join-Path $PSScriptRoot 'test-core13.ps1')
     }
 }
 finally {

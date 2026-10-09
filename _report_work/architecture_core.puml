@@ -1,0 +1,28 @@
+@startuml
+top to bottom direction
+skinparam dpi 180
+skinparam defaultFontName Arial
+skinparam defaultFontSize 16
+skinparam shadowing false
+rectangle "Người dùng / Trình duyệt" as B
+rectangle "Reverse proxy / WAF" as Edge
+rectangle "Web UI\nReact + TypeScript" as UI
+rectangle "API nghiệp vụ\nASP.NET Core" as API
+rectangle "Worker điều phối\nLập lịch + ZAP" as W
+rectangle "ZAP runner cô lập\nMột container mỗi lần quét" as Z
+database "PostgreSQL\ntrạng thái và audit" as DB
+folder "Kho tệp riêng\nbáo cáo và bằng chứng" as Store
+cloud "IdP OIDC / Secrets" as S
+B --> Edge
+Edge --> UI
+Edge --> API
+UI --> API
+API --> DB
+API --> Store
+API --> S
+W --> DB
+W --> Store
+W --> S
+W --> Z
+Z --> W : báo cáo JSON/HTML
+@enduml

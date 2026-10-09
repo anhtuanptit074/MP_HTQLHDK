@@ -1,0 +1,101 @@
+{
+  "passed": 24,
+  "results": [
+    {
+      "name": "V001 immutable checksum",
+      "passed": true
+    },
+    {
+      "name": "V002 immutable checksum",
+      "passed": true
+    },
+    {
+      "name": "exactly 13 business tables",
+      "passed": true
+    },
+    {
+      "name": "audit cannot be updated",
+      "passed": true
+    },
+    {
+      "name": "audit cannot be deleted",
+      "passed": true
+    },
+    {
+      "name": "occurrences remain immutable",
+      "passed": true
+    },
+    {
+      "name": "occurrences cannot cross asset boundaries",
+      "passed": true
+    },
+    {
+      "name": "source confidence range is enforced",
+      "passed": true
+    },
+    {
+      "name": "approved scope content remains immutable",
+      "passed": true
+    },
+    {
+      "name": "approved scope children remain immutable",
+      "passed": true
+    },
+    {
+      "name": "approval must be independent",
+      "passed": true
+    },
+    {
+      "name": "approved effective intervals cannot overlap",
+      "passed": true
+    },
+    {
+      "name": "unbounded scope accepts one future termination",
+      "passed": true
+    },
+    {
+      "name": "scope termination cannot be changed again",
+      "passed": true
+    },
+    {
+      "name": "profiles require service accounts",
+      "passed": true
+    },
+    {
+      "name": "active profile content is immutable",
+      "passed": true
+    },
+    {
+      "name": "used plan requires a new version for edits",
+      "passed": true
+    },
+    {
+      "name": "used plan can still be paused",
+      "passed": true
+    },
+    {
+      "name": "verification plan must use ticket asset",
+      "passed": true
+    },
+    {
+      "name": "finding cannot jump straight from new to closed",
+      "passed": true
+    },
+    {
+      "name": "finding triage requires independent final severity",
+      "passed": true
+    },
+    {
+      "name": "finding identity remains immutable",
+      "passed": true
+    },
+    {
+      "name": "run identity remains immutable",
+      "passed": true
+    },
+    {
+      "name": "processed source report remains immutable",
+      "passed": true
+    }
+  ]
+}

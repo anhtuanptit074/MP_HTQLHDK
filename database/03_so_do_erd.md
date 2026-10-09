@@ -1,347 +1,336 @@
-# ERD — mô hình 27 bảng
+# ERD — MÔ HÌNH BCNF TỐI GIẢN 13 BẢNG
 
-Các hình chỉ hiển thị thuộc tính chính. PK/FK ghép và ràng buộc đầy đủ xem từ điển/SQL. Bảy vai trò là miền giá trị cố định; ma trận quyền là view, không phải bảng nghiệp vụ bổ sung.
+ERD này thay thế sơ đồ 27 bảng trước đây và bám theo [thiết kế BCNF tối giản](08_thiet_ke_3nf_tinh_gon.md). Sơ đồ tổng thể ưu tiên khóa và quan hệ; danh sách đầy đủ mọi thuộc tính nằm trong [tài liệu giải thích chi tiết](09_giai_thich_chi_tiet_13_bang.md).
 
-## 01 tai san phan quyen
+## 1. ERD tổng thể
 
 ```mermaid
 erDiagram
     app_user {
         bigint id PK
+        varchar username UK
+        varchar account_kind
+        boolean is_active
     }
-    team {
+
+    user_role {
         bigint id PK
-        varchar code
-    }
-    team_member {
-        bigint id PK
-        bigint team_id FK
         bigint user_id FK
+        varchar role_code
+        bigint asset_id FK
+        bigint granted_by FK
+        bigint revoked_by FK
+    }
+
+    asset {
+        bigint id PK
+        varchar code UK
+        text base_url
+        bigint owner_id FK
+        bigint security_officer_id FK
+        varchar status
+        bigint created_by FK
+    }
+
+    asset_scope_revision {
+        bigint id PK
+        bigint asset_id FK
+        integer version_no UK
+        varchar status
+        timestamptz effective_from
+        timestamptz effective_until
+    }
+
+    asset_scope_rule {
+        bigint id PK
+        bigint scope_id FK
+        varchar effect
+        varchar target_type
+        text target_value
+        varchar match_mode
+    }
+
+    asset_scan_window {
+        bigint id PK
+        bigint scope_id FK
+        smallint weekday_iso
+        time start_time
+        time end_time
+        text timezone
+    }
+
+    zap_scan_profile {
+        bigint id PK
+        varchar code UK
+        integer version_no UK
+        varchar status
+        boolean active_scan_enabled
+        bigint service_user_id FK
+        bigint created_by FK
+        bigint approved_by FK
+    }
+
+    scan_plan {
+        bigint id PK
+        varchar code UK
+        integer version_no UK
+        varchar plan_kind
+        bigint scope_id FK
+        bigint zap_profile_id FK
+        bigint operator_id FK
+        bigint remediation_ticket_id FK
+        varchar status
+    }
+
+    scan_run {
+        bigint id PK
+        bigint plan_id FK
+        varchar code UK
+        timestamptz scheduled_for UK
+        varchar scan_status
+        varchar report_status
+        text report_object_key
+        char report_sha256
+        varchar verification_outcome
+        bigint evaluated_by FK
+    }
+
+    finding {
+        bigint id PK
+        bigint asset_id FK
+        varchar code UK
+        char fingerprint UK
+        varchar final_severity
+        varchar status
+        bigint assessed_by FK
+        bigint decision_by FK
+    }
+
+    finding_occurrence {
+        bigint id PK
+        bigint finding_id FK
+        bigint scan_run_id FK
+        text record_locator UK
+        varchar source_severity
+        smallint source_confidence
+    }
+
+    remediation_ticket {
+        bigint id PK
+        bigint finding_id FK,UK
+        varchar code UK
+        bigint assignee_id FK
+        bigint assigned_by FK
+        timestamptz due_at
+        smallint progress_percent
+    }
+
+    audit_log {
+        bigint id PK
+        bigint actor_id FK
+        varchar actor_kind
+        varchar action
+        varchar object_type
+        text object_id
+        uuid correlation_id
+    }
+
+    app_user ||--o{ user_role : "duoc_cap"
+    asset |o--o{ user_role : "gioi_han_asset"
+    app_user ||--o{ user_role : "cap_thu_hoi"
+
+    app_user ||--o{ asset : "owner_tao_ATTT"
+    asset ||--o{ asset_scope_revision : "co_phien_ban"
+    asset_scope_revision ||--o{ asset_scope_rule : "co_luat"
+    asset_scope_revision ||--o{ asset_scan_window : "co_khung_gio"
+
+    app_user ||--o{ zap_scan_profile : "service_tao_duyet"
+    asset_scope_revision ||--o{ scan_plan : "pham_vi"
+    zap_scan_profile ||--o{ scan_plan : "cau_hinh_ZAP"
+    app_user ||--o{ scan_plan : "operator_tao_duyet"
+
+    finding ||--o| remediation_ticket : "co_phieu"
+    remediation_ticket |o--o{ scan_plan : "yeu_cau_xac_minh"
+    scan_plan ||--o{ scan_run : "sinh_lan_quet"
+
+    asset ||--o{ finding : "co_phat_hien"
+    finding ||--o{ finding_occurrence : "xuat_hien"
+    scan_run ||--o{ finding_occurrence : "ghi_nhan"
+
+    app_user ||--o{ finding : "danh_gia_quyet_dinh"
+    app_user ||--o{ remediation_ticket : "giao_va_xu_ly"
+    app_user |o--o{ scan_run : "danh_gia_xac_minh"
+    app_user |o--o{ audit_log : "thuc_hien"
+```
+
+## 2. ERD tài sản, phạm vi và quyền
+
+```mermaid
+erDiagram
+    app_user {
+        bigint id PK
+        varchar username UK
+        text display_name
+        varchar account_kind
+        boolean is_active
     }
     user_role {
         bigint id PK
         bigint user_id FK
-        user_role_code role_code
+        varchar role_code
         bigint asset_id FK
+        bigint granted_by FK
+        timestamptz granted_at
+        bigint revoked_by FK
+        timestamptz revoked_at
     }
     asset {
-        bigint id PK, FK
-        varchar code
+        bigint id PK
+        varchar code UK
+        text name
+        text base_url
+        varchar environment
         bigint owner_id FK
-        bigint technical_team_id FK
         bigint security_officer_id FK
-        asset_status status
-        bigint current_scope_id FK
+        varchar criticality
+        varchar status
+        bigint created_by FK
     }
     asset_scope_revision {
         bigint id PK
         bigint asset_id FK
-        integer version_no
-        text status
+        integer version_no UK
+        varchar status
+        bigint created_by FK
+        bigint confirmed_by FK
+        bigint decided_by FK
+        timestamptz effective_from
+        timestamptz effective_until
     }
     asset_scope_rule {
         bigint id PK
         bigint scope_id FK
-        text effect
+        varchar effect
+        varchar target_type
         text target_value
+        varchar match_mode
     }
     asset_scan_window {
         bigint id PK
         bigint scope_id FK
+        smallint weekday_iso
+        time start_time
+        time end_time
+        boolean ends_next_day
+        text timezone
     }
-    team ||--o{ team_member : "team_id"
-    app_user ||--o{ team_member : "user_id"
+
     app_user ||--o{ user_role : "user_id"
+    app_user ||--o{ user_role : "granted_revoked_by"
     asset |o--o{ user_role : "asset_id"
-    app_user |o--o{ asset : "owner_id"
-    team |o--o{ asset : "technical_team_id"
-    app_user |o--o{ asset : "security_officer_id"
-    asset_scope_revision |o--o| asset : "current_scope_id"
+    app_user ||--o{ asset : "owner_security_creator"
     asset ||--o{ asset_scope_revision : "asset_id"
+    app_user ||--o{ asset_scope_revision : "created_confirmed_decided"
     asset_scope_revision ||--o{ asset_scope_rule : "scope_id"
     asset_scope_revision ||--o{ asset_scan_window : "scope_id"
 ```
 
-[SVG](diagrams/01_tai_san_phan_quyen.svg) · [PNG](diagrams/01_tai_san_phan_quyen.png) · [PlantUML](diagrams/01_tai_san_phan_quyen.puml)
-
-## 02 lich quet nhap ket qua
+## 3. ERD quét ZAP, kết quả và khắc phục
 
 ```mermaid
 erDiagram
-    asset {
-        bigint id PK, FK
-        varchar code
-        bigint owner_id FK
-        bigint technical_team_id FK
-        bigint security_officer_id FK
-        asset_status status
-        bigint current_scope_id FK
-    }
     asset_scope_revision {
         bigint id PK
         bigint asset_id FK
         integer version_no
-        text status
+        varchar status
     }
-    scan_schedule {
+    zap_scan_profile {
         bigint id PK
-        varchar code
-        bigint asset_id FK
+        varchar code UK
+        integer version_no
+        varchar status
+        boolean active_scan_enabled
+        varchar report_format
+        bigint service_user_id FK
+    }
+    scan_plan {
+        bigint id PK
+        varchar code UK
+        varchar plan_kind
         bigint scope_id FK
-        bigint operations_team_id FK
-        schedule_status status
-        text_array target_urls
+        bigint zap_profile_id FK
+        bigint operator_id FK
+        bigint remediation_ticket_id FK
+        text recurrence_rule
+        timestamptz requested_for
     }
-    scan_occurrence {
+    scan_run {
         bigint id PK
-        varchar code
-        bigint asset_id FK
-        bigint scope_id FK
-        bigint schedule_id FK
-        bigint operations_team_id FK
-        scan_status status
-        text_array target_urls
-    }
-    import_batch {
-        bigint id PK
-        varchar code
-        bigint asset_id FK
-        bigint scan_id FK
-        varchar file_sha256
-        import_status status
-        text raw_object_key
-    }
-    import_error {
-        bigint id PK
-        bigint batch_id FK
+        bigint plan_id FK
+        varchar code UK
+        timestamptz scheduled_for
+        varchar scan_status
+        text external_plan_id
+        text external_session_id
+        varchar report_status
+        text report_object_key
+        char report_sha256
+        varchar verification_outcome
     }
     finding {
-        bigint id PK, FK
-        varchar code
+        bigint id PK
         bigint asset_id FK
-        varchar fingerprint
-        finding_status status
-        bigint current_review_id FK
-        bigint verification_result_id FK
+        varchar code UK
+        char fingerprint UK
+        varchar final_severity
+        varchar status
     }
     finding_occurrence {
         bigint id PK
-        bigint asset_id FK
         bigint finding_id FK
-        bigint scan_id FK
-    }
-    finding_observation {
-        bigint id PK
-        bigint asset_id FK
-        bigint scan_id FK
-        bigint occurrence_id FK
-        bigint batch_id FK
-        source_severity source_severity
+        bigint scan_run_id FK
+        text record_locator
+        varchar source_severity
         smallint source_confidence
     }
-    asset_scope_revision |o--o| asset : "current_scope_id"
-    asset ||--o{ asset_scope_revision : "asset_id"
-    asset ||--o{ scan_schedule : "asset_id"
-    asset_scope_revision ||--o{ scan_schedule : "scope_id"
-    asset ||--o{ scan_occurrence : "asset_id"
-    asset_scope_revision ||--o{ scan_occurrence : "scope_id"
-    scan_schedule |o--o{ scan_occurrence : "schedule_id"
-    asset ||--o{ import_batch : "asset_id"
-    scan_occurrence ||--o{ import_batch : "scan_id"
-    import_batch ||--o{ import_error : "batch_id"
-    asset ||--o{ finding : "asset_id"
-    finding ||--o{ finding_occurrence : "finding_id"
-    scan_occurrence ||--o{ finding_occurrence : "scan_id"
-    finding_occurrence ||--o{ finding_observation : "occurrence_id"
-    import_batch ||--o{ finding_observation : "batch_id"
-```
-
-[SVG](diagrams/02_lich_quet_nhap_ket_qua.svg) · [PNG](diagrams/02_lich_quet_nhap_ket_qua.png) · [PlantUML](diagrams/02_lich_quet_nhap_ket_qua.puml)
-
-## 03 phan tich khac phuc
-
-```mermaid
-erDiagram
-    scan_occurrence {
-        bigint id PK
-        varchar code
-        bigint asset_id FK
-        bigint scope_id FK
-        bigint schedule_id FK
-        bigint operations_team_id FK
-        scan_status status
-        text_array target_urls
-    }
-    import_batch {
-        bigint id PK
-        varchar code
-        bigint asset_id FK
-        bigint scan_id FK
-        varchar file_sha256
-        import_status status
-        text raw_object_key
-    }
-    finding {
-        bigint id PK, FK
-        varchar code
-        bigint asset_id FK
-        varchar fingerprint
-        finding_status status
-        bigint current_review_id FK
-        bigint verification_result_id FK
-    }
-    evidence {
-        bigint id PK
-        bigint finding_id FK
-    }
-    finding_review {
-        bigint id PK
-        bigint finding_id FK
-        text review_kind
-        text status
-        bigint previous_review_id FK
-        final_severity proposed_severity
-        bigint evidence_id FK
-        bigint trigger_occurrence_id FK
-    }
-    sla_rule {
-        bigint id PK
-        final_severity severity
-    }
     remediation_ticket {
-        bigint id PK, FK
-        varchar code
-        bigint finding_id FK
-        bigint current_event_id FK
-    }
-    ticket_event {
         bigint id PK
-        bigint ticket_id FK
-        bigint finding_id FK
-        bigint previous_event_id FK
-        bigint team_id FK
+        bigint finding_id FK,UK
+        varchar code UK
         bigint assignee_id FK
         timestamptz due_at
-        bigint sla_rule_id FK
-        bigint evidence_id FK
+        smallint progress_percent
+        text evidence_object_key
     }
-    verification_request {
-        bigint id PK
-        bigint asset_id FK
-        bigint finding_id FK
-        bigint ticket_id FK
-        bigint scope_id FK
-        bigint remediation_event_id FK
-        bigint operations_team_id FK
-        text status
-    }
-    verification_result {
-        bigint id PK
-        bigint request_id FK
-        bigint finding_id FK
-        bigint asset_id FK
-        bigint scan_id FK
-        bigint batch_id FK
-    }
-    scan_occurrence ||--o{ import_batch : "scan_id"
-    finding_review |o--o| finding : "current_review_id"
-    verification_result |o--o| finding : "verification_result_id"
-    finding ||--o{ evidence : "finding_id"
-    finding ||--o{ finding_review : "finding_id"
-    finding_review |o--o{ finding_review : "previous_review_id"
-    evidence |o--o{ finding_review : "evidence_id"
-    finding ||--o{ remediation_ticket : "finding_id"
-    ticket_event |o--o| remediation_ticket : "current_event_id"
-    remediation_ticket ||--o{ ticket_event : "ticket_id"
-    ticket_event |o--o{ ticket_event : "previous_event_id"
-    sla_rule |o--o{ ticket_event : "sla_rule_id"
-    evidence |o--o{ ticket_event : "evidence_id"
-    finding ||--o{ verification_request : "finding_id"
-    remediation_ticket ||--o{ verification_request : "ticket_id"
-    ticket_event ||--o{ verification_request : "remediation_event_id"
-    verification_request ||--o{ verification_result : "request_id"
-    scan_occurrence ||--o{ verification_result : "scan_id"
-    import_batch |o--o{ verification_result : "batch_id"
+
+    asset_scope_revision ||--o{ scan_plan : "scope_id"
+    zap_scan_profile ||--o{ scan_plan : "zap_profile_id"
+    remediation_ticket |o--o{ scan_plan : "verification"
+    scan_plan ||--o{ scan_run : "plan_id"
+    scan_run ||--o{ finding_occurrence : "scan_run_id"
+    finding ||--o{ finding_occurrence : "finding_id"
+    finding ||--o| remediation_ticket : "finding_id"
 ```
 
-[SVG](diagrams/03_phan_tich_khac_phuc.svg) · [PNG](diagrams/03_phan_tich_khac_phuc.png) · [PlantUML](diagrams/03_phan_tich_khac_phuc.puml)
+## 4. Diễn giải bội số
 
-## 04 rui ro bao mat
+| Quan hệ | Diễn giải |
+|---|---|
+| Asset 1–N ScopeRevision | Một asset có nhiều phiên bản phạm vi; mỗi revision thuộc đúng một asset |
+| ScopeRevision 1–N Rule/Window | Một phiên bản có nhiều luật và nhiều khung giờ |
+| ScopeRevision 1–N ScanPlan | Nhiều kế hoạch có thể dùng cùng một phiên bản đã duyệt |
+| ZapProfile 1–N ScanPlan | Một profile version có thể được nhiều kế hoạch dùng |
+| ScanPlan 1–N ScanRun | Lịch định kỳ sinh nhiều run; Verification bị giới hạn tối đa một run |
+| Asset 1–N Finding | Một asset có nhiều phát hiện |
+| Finding N–N ScanRun | Thể hiện bằng `finding_occurrence` |
+| Finding 1–0..1 Ticket | Mô hình tối giản có tối đa một phiếu hiện hành cho finding |
+| Ticket 1–N Verification Plan | Mỗi lần yêu cầu/quét lại tạo plan Verification mới |
+| User 1–N Role | Một người có thể có nhiều role/phạm vi asset |
 
-```mermaid
-erDiagram
-    app_user {
-        bigint id PK
-    }
-    asset {
-        bigint id PK, FK
-        varchar code
-        bigint owner_id FK
-        bigint technical_team_id FK
-        bigint security_officer_id FK
-        asset_status status
-        bigint current_scope_id FK
-    }
-    finding {
-        bigint id PK, FK
-        varchar code
-        bigint asset_id FK
-        varchar fingerprint
-        finding_status status
-        bigint current_review_id FK
-        bigint verification_result_id FK
-    }
-    risk_acceptance {
-        bigint id PK
-        bigint finding_id FK
-        bigint renewal_of_id FK
-        bigint responsible_user_id FK
-        text status
-        timestamptz valid_until
-    }
-    audit_log {
-        bigint id PK
-        bigint actor_id FK
-        bigint asset_id FK
-        bigint finding_id FK
-        bigint evidence_id FK
-        bigint verification_result_id FK
-        bigint risk_acceptance_id FK
-        bigint finding_review_id FK
-        bigint trigger_occurrence_id FK
-    }
-    report_export {
-        bigint id PK
-        bigint recipient_id FK
-        varchar token_hash
-        timestamptz expires_at
-    }
-    report_export_asset {
-        bigint export_id PK, FK
-        bigint asset_id PK, FK
-    }
-    notification {
-        bigint id PK
-        bigint recipient_id FK
-        bigint asset_id FK
-        bigint finding_id FK
-    }
-    app_user |o--o{ asset : "owner_id"
-    app_user |o--o{ asset : "security_officer_id"
-    asset ||--o{ finding : "asset_id"
-    finding ||--o{ risk_acceptance : "finding_id"
-    risk_acceptance |o--o{ risk_acceptance : "renewal_of_id"
-    app_user ||--o{ risk_acceptance : "responsible_user_id"
-    app_user |o--o{ audit_log : "actor_id"
-    asset |o--o{ audit_log : "asset_id"
-    finding |o--o{ audit_log : "finding_id"
-    risk_acceptance |o--o{ audit_log : "risk_acceptance_id"
-    app_user ||--o{ report_export : "recipient_id"
-    report_export ||--o{ report_export_asset : "export_id"
-    asset ||--o{ report_export_asset : "asset_id"
-    app_user ||--o{ notification : "recipient_id"
-    asset ||--o{ notification : "asset_id"
-    finding |o--o{ notification : "finding_id"
-```
+## 5. Tệp nguồn sơ đồ
 
-[SVG](diagrams/04_rui_ro_bao_mat.svg) · [PNG](diagrams/04_rui_ro_bao_mat.png) · [PlantUML](diagrams/04_rui_ro_bao_mat.puml)
+- [Mermaid](diagrams/05_erd_13_bang.mmd)
+- [PlantUML](diagrams/05_erd_13_bang.puml)
+
+Hai tệp nguồn biểu diễn cùng ERD tổng thể. Mermaid trong tài liệu này có thể được render trực tiếp bởi công cụ hỗ trợ Mermaid.

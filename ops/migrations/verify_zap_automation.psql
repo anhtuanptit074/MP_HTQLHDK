@@ -1,0 +1,38 @@
+\set ON_ERROR_STOP on
+
+DO $$
+DECLARE
+  business_table_count integer;
+BEGIN
+  SELECT count(*) INTO business_table_count
+  FROM information_schema.tables
+  WHERE table_schema = 'htqlhdk' AND table_type = 'BASE TABLE';
+
+  IF business_table_count <> 30 THEN
+    RAISE EXCEPTION 'Expected 30 HTQLHDK tables after V002, found %', business_table_count;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM htqlhdk_migration.schema_migration
+    WHERE version = 'V002' AND status = 'Applied' AND applied_at IS NOT NULL
+  ) THEN
+    RAISE EXCEPTION 'Migration V002 is not recorded as Applied';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'htqlhdk' AND table_name = 'scan_schedule'
+      AND column_name = 'automation_enabled'
+  ) THEN
+    RAISE EXCEPTION 'scan_schedule.automation_enabled is missing';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger
+    WHERE tgname = 'protect_zap_scan_profile_version' AND NOT tgisinternal
+  ) THEN
+    RAISE EXCEPTION 'Approved ZAP profile immutability trigger is missing';
+  END IF;
+END $$;
+
+SELECT 'PASS: V002 applied; 30 business tables; ZAP automation schema present.' AS result;

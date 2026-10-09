@@ -1,0 +1,85 @@
+@startuml
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 11
+skinparam activityBackgroundColor white
+skinparam activityBorderColor #334155
+skinparam ArrowColor #475569
+title Sơ đồ hoạt động — quy trình quét và khắc phục tự động
+
+|Chủ tài sản / ATTT|
+start
+:Khai báo tài sản, phạm vi và khung giờ;
+:Xác nhận và phê duyệt tài sản;
+
+|Vận hành tích hợp / ATTT|
+:Tạo phiên bản hồ sơ quét ZAP;
+:Phê duyệt hồ sơ và lịch quét;
+
+|Bộ lập lịch và điều phối|
+:Phát hiện lịch đến hạn;
+:Tạo duy nhất một scan_occurrence;
+:Kiểm tra Asset Active, Scope Approved,\nProfile Active và khung giờ;
+if (Điều kiện hợp lệ?) then (Có)
+  :Tạo zap_execution và snapshot cấu hình;
+else (Không)
+  :Ghi Failed/Missed và thông báo;
+  |Vận hành tích hợp / ATTT|
+  :Rà soát ngoại lệ;
+  stop
+endif
+
+|OWASP ZAP|
+:Nhận Automation Plan qua runner/API;
+:Spider, passive scan và active scan\n(nếu được phê duyệt);
+if (Có lỗi, timeout hoặc yêu cầu dừng?) then (Có)
+  |Bộ lập lịch và điều phối|
+  :Đánh dấu Failed / Timed Out / Cancelled;
+  :Che thông tin nhạy cảm và ghi audit;
+  |Vận hành tích hợp / ATTT|
+  :Xử lý lỗi; chỉ chạy lại khi được phép;
+  stop
+else (Không)
+  :Sinh báo cáo JSON và HTML;
+endif
+
+|Bộ lập lịch và điều phối|
+:Thu báo cáo và tính SHA-256;
+:Kiểm định dạng, kích thước, nguồn và phạm vi;
+if (Báo cáo hợp lệ?) then (Có)
+  :Lưu zap_artifact bất biến;
+  :Tạo import_batch ở trạng thái Received;
+  :Chuẩn hóa, chống trùng và cập nhật finding;
+else (Không)
+  :Cách ly báo cáo, ghi lỗi và cảnh báo;
+  |Vận hành tích hợp / ATTT|
+  :Rà soát báo cáo bị từ chối;
+  stop
+endif
+
+|Chuyên viên ATTT|
+:Phân tích và xác nhận Final Severity;
+if (False Positive / ngoài phạm vi?) then (Có)
+  :Lưu quyết định và bằng chứng;
+  stop
+else (Không)
+  :Tạo phiếu và phân công khắc phục;
+endif
+
+|Nhóm khắc phục kỹ thuật|
+:Tiếp nhận, sửa lỗi và cập nhật bằng chứng;
+:Chuyển phiếu sang chờ xác minh;
+
+|Bộ lập lịch và điều phối|
+:Tạo lần quét xác minh tự động;
+:Điều phối ZAP và tiếp nhận kết quả;
+
+|Chuyên viên ATTT|
+if (Đã khắc phục và coverage đạt?) then (Có)
+  :Đóng phát hiện;
+else (Không)
+  :Mở lại phát hiện và phiếu xử lý;
+endif
+stop
+@enduml
+

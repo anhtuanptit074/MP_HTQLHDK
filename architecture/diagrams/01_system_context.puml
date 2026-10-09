@@ -4,7 +4,7 @@ left to right direction
 skinparam shadowing false
 skinparam componentStyle rectangle
 
-actor "Nguoi dung\n7 vai tro" as User
+actor "Nguoi dung" as User
 actor "SCAN_OPS" as Ops
 rectangle "He thong quan ly quet\nlo hong website dinh ky" as System
 cloud "IdP cua don vi\nOIDC" as IdP

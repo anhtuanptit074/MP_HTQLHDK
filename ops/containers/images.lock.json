@@ -7,6 +7,13 @@
       "digest": "sha256:18cfe3ef5e6815560c98237d6216d1e5119702fb0f3894c8785dd58b8bbe5d73",
       "source": "Docker Official Image",
       "platforms": "multi-arch OCI index"
+    },
+    {
+      "purpose": "isolated OWASP ZAP Automation Framework scan runner",
+      "image": "ghcr.io/zaproxy/zaproxy:2.17.0",
+      "digest": "sha256:781a2bdaea47324e7bab583e2263f21d257b0aee61ed51521a5be45f5f5081ef",
+      "source": "ZAP official GHCR image",
+      "platforms": "linux/amd64, linux/arm64"
     }
   ]
 }

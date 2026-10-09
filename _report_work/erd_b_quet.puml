@@ -1,0 +1,41 @@
+@startuml
+left to right direction
+skinparam dpi 180
+skinparam linetype ortho
+skinparam shadowing false
+skinparam entityFontSize 16
+skinparam defaultFontName Arial
+hide circle
+entity "Phiên bản phạm vi\nasset_scope_revision" as S {
+  * id : bigint <<PK>>
+  --
+  asset_id : bigint <<FK>>
+  status : varchar
+}
+entity "Hồ sơ ZAP\nzap_scan_profile" as Z {
+  * id : bigint <<PK>>
+  --
+  code + version_no : <<UK>>
+  service_user_id : bigint <<FK>>
+  status : varchar
+}
+entity "Kế hoạch quét\nscan_plan" as P {
+  * id : bigint <<PK>>
+  --
+  scope_id : bigint <<FK>>
+  zap_profile_id : bigint <<FK>>
+  operator_id : bigint <<FK>>
+  plan_kind : Periodic/Verification
+}
+entity "Lần quét\nscan_run" as X {
+  * id : bigint <<PK>>
+  --
+  plan_id : bigint <<FK>>
+  scheduled_for : timestamptz
+  scan_status : varchar
+  report_sha256 : char(64)
+}
+S ||--o{ P
+Z ||--o{ P
+P ||--o{ X
+@enduml

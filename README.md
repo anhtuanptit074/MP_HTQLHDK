@@ -1,44 +1,52 @@
-# HTQLHDK — nền tảng phát triển
+# HTQLHDK — quản lý quét lỗ hổng website định kỳ
 
-Repository cho Hệ thống quản lý quét lỗ hổng website định kỳ. Giai đoạn 10 thiết lập nền tảng lặp lại được cho React 19.2, ASP.NET Core/.NET 10 LTS và PostgreSQL 17; chưa triển khai nghiệp vụ giai đoạn 11.
+Ứng dụng React/TypeScript, ASP.NET Core/.NET 10 và PostgreSQL 17 đã triển khai nghiệp vụ theo **mô hình tinh gọn 13 bảng**: tài sản và phạm vi, hồ sơ ZAP, kế hoạch/lần quét, nhập báo cáo, phân loại phát hiện, khắc phục, xác minh, phân quyền và nhật ký.
 
-## Bắt đầu nhanh
+## Chạy thử
 
-1. Cài Git, Node.js 24+, .NET SDK 10.0.400 và Docker Desktop/Engine.
-2. Sao chép `.env.local.example` thành `.env.local`, thay hai giá trị `REPLACE_*` bằng hai mật khẩu local khác nhau.
-3. Chạy `docker compose --env-file .env.local up -d postgres`.
-4. Chạy `./scripts/migrate.ps1` để tạo schema baseline.
-5. Chạy `./scripts/test.ps1` để kiểm tra backend, frontend, OpenAPI, database artifact và hồ sơ thiết kế.
+1. Mở Docker Desktop.
+2. Nếu chưa cấu hình, sao chép `.env.local.example` thành `.env.local`, đặt hai mật khẩu database khác nhau. Các công cụ cần có: Node.js 24+, .NET SDK 10.0.400 và Docker.
+3. Nếu vừa tải repository, chạy `scripts/test.ps1` để cài phụ thuộc và biên dịch.
+4. Chạy `start-local.cmd` tại thư mục gốc. Script tạo/migrate database 13 bảng, chuẩn bị tài khoản mẫu, khởi động API, frontend và worker.
+5. Mở [ứng dụng local](http://127.0.0.1:5173/). Tài khoản và mật khẩu mẫu được lưu riêng trong `.codex_tmp/local-accounts.txt`; không có mật khẩu cố định trong mã nguồn.
 
-Chi tiết và cách xử lý lỗi nằm trong [hướng dẫn local/test](docs/development/01_local_setup.md).
+Dừng bằng `start-local.cmd -Stop`. PostgreSQL và dữ liệu tiếp tục được giữ. Sau khi sửa mã backend, dừng dịch vụ trước khi biên dịch lại.
 
-## Cấu trúc
+Worker sẵn sàng nhưng **tự động quét ZAP mặc định tắt**. Có thể nhập báo cáo JSON/XML từ lần quét ngoài để dùng thử đầy đủ luồng nghiệp vụ. Chỉ bật `start-local.cmd -EnableZap` sau khi khai báo mục tiêu thử nghiệm, phạm vi, khung giờ và hồ sơ được duyệt. Chi tiết trong [hướng dẫn bản 13 bảng](docs/development/10_core13_application.md).
 
-| Thư mục | Mục đích |
+## Nghiệp vụ và quyền
+
+| Vai trò | Công việc |
 |---|---|
-| `src/backend` | API và worker cùng release, module hóa |
-| `src/frontend` | React/TypeScript SPA |
-| `database` | Thiết kế và SQL nguồn đã kiểm chứng |
-| `ops/migrations` | Migration bất biến, checksum và xác minh |
-| `tests` | Fixture giả/đã làm sạch và contract checks |
-| `scripts` | Bootstrap, migration và kiểm tra thống nhất |
-| `docs/development` | Quy chuẩn phát triển/vận hành giai đoạn 10 |
-| `.github` | Pipeline, dependency update và mẫu pull request |
+| Chủ tài sản | Khai báo, xem tài sản sở hữu, xác nhận phạm vi; được suy ra từ người sở hữu tài sản |
+| ADMIN | Tài khoản, cấp/thu hồi quyền, nhật ký quyền và đăng nhập |
+| SECURITY | Phê duyệt phạm vi và kế hoạch tài sản phụ trách, đánh giá mức độ, phân công, kết luận xác minh, truy cập báo cáo gốc có lý do |
+| SCAN_OPERATOR | Hồ sơ quét, kế hoạch/lần quét được giao, nhập báo cáo và kết quả nguồn thuộc nhiệm vụ |
+| REMEDIATOR | Phát hiện/phiếu được giao, tiến độ, biện pháp và bằng chứng khắc phục |
+| AUDITOR | Đọc dữ liệu đã che và nhật ký trong tài sản được cấp quyền |
 
-## Nguyên tắc an toàn
+ADMIN không tự có quyền đọc dữ liệu lỗ hổng hoặc báo cáo gốc. Quyền có `asset_id=NULL` chỉ thể hiện điều kiện nhận nhiệm vụ, không mở quyền trên mọi tài sản. Kiểm tra quyền và phiên bản dữ liệu được thực hiện lại tại API cho mỗi yêu cầu.
 
-- Không commit `.env.local`, secret, token, chứng thư, raw ZAP hoặc dữ liệu lỗ hổng thật.
-- API/worker không điều khiển ZAP; kết quả quét chỉ được nhập qua hợp đồng đã duyệt.
-- Log chỉ chứa mã định danh nội bộ, correlation ID, action, outcome và số liệu tổng hợp; không log URL đầy đủ, Attack, Evidence, parameter, object key hay token.
-- Migration đã áp dụng không được sửa. Thay đổi mới phải là migration mới và có checksum.
-- Pull request phải liên kết UC/BR/API/UI và kèm bằng chứng test theo [Definition of Done](docs/development/05_definition_of_done.md).
+Chỉ đóng phát hiện sau khắc phục khi báo cáo quét xác minh đã xử lý thành công, fingerprint không còn xuất hiện và người phê duyệt độc lập xác nhận coverage. Phát hiện xuất hiện lại trong lần quét sau sẽ được mở lại.
 
-## Tài liệu chính
+## Kiểm thử và dữ liệu
 
-- [Ma trận môi trường](docs/development/07_environment_matrix.md)
-- [Coding convention và log an toàn](docs/development/02_coding_standards.md)
-- [Cấu hình và secrets](docs/development/03_configuration_and_secrets.md)
-- [Migration và fixture](docs/development/04_migrations.md)
-- [Branch/review](docs/development/06_branch_and_review.md)
-- [Definition of Done](docs/development/05_definition_of_done.md)
+- `scripts/test.ps1`: biên dịch, kiểm thử backend/frontend, kiểm tra thiết kế cũ và ràng buộc schema 13 bảng.
+- `scripts/test.ps1 -IncludeDatabase`: thêm các luồng HTTP và worker mô phỏng trên **database riêng** `htqlhdk_core_test_local`.
+- `scripts/test-core13.ps1`: chạy riêng kiểm thử HTTP/worker sau khi đã biên dịch.
+- Database dùng thử: `htqlhdk_core_local`, đúng 13 bảng trong schema `htqlhdk`.
+- Database cũ `htqlhdk_local` được giữ nguyên. Bản mới dùng dữ liệu mẫu riêng; không tự chuyển đổi dữ liệu từ mô hình 30 bảng.
 
+## Mã nguồn và tài liệu
+
+| Thư mục | Nội dung |
+|---|---|
+| `src/backend/Htqlhdk.Core` | Nghiệp vụ, quyền, parser ZAP, mã hóa và lịch quét |
+| `src/backend/Htqlhdk.Api` | Đăng nhập, cookie/CSRF, API nghiệp vụ và health check database |
+| `src/backend/Htqlhdk.Worker` | Lập lịch, thực thi Docker ZAP, heartbeat/hủy và nhập báo cáo |
+| `src/frontend` | Màn hình tiếng Việt và thao tác theo quyền |
+| `ops/core-migrations` | Migration 13 bảng, checksum và kiểm thử ràng buộc |
+| `ops/migrations`, `api_design`, `ui_design` | Hồ sơ và migration của thiết kế trước; giữ để tham khảo |
+| `tests/core13` | Kiểm thử nghiệp vụ và phân quyền qua HTTP |
+
+Không commit `.env.local`, khóa mã hóa, cookie, mật khẩu mẫu, báo cáo gốc hoặc dữ liệu lỗ hổng thật. Migration đã áp dụng được giữ bất biến. Đọc [báo cáo chạy thử](docs/development/09_local_readiness.md) và [thiết kế 13 bảng](database/08_thiet_ke_3nf_tinh_gon.md).

@@ -1,0 +1,200 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="3300" height="1900" viewBox="0 0 3300 1900">
+<defs><marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L12,6 L0,12 z" fill="#475569"/></marker></defs>
+<rect width="3300" height="1900" fill="#FFFFFF"/>
+<text x="1650.0" y="68" text-anchor="middle" font-family="Arial" font-size="34" font-weight="700" fill="#111827">ERD cốt lõi HTQLHDK — tích hợp tự động OWASP ZAP</text>
+<text x="1650.0" y="98" text-anchor="middle" font-family="Arial" font-size="20" font-weight="400" fill="#64748B">Các FK người dùng, nhóm, audit và thông báo được lược khỏi hình để giữ rõ luồng nghiệp vụ chính</text>
+<rect x="60" y="410" width="390" height="244" rx="12" fill="#FFFFFF" stroke="#475569" stroke-width="3"/>
+<path d="M72,410 H438 Q450,410 450,422 V486 H60 V422 Q60,410 72,410 Z" fill="#EAF2FF" stroke="#475569" stroke-width="3"/>
+<text x="255.0" y="446" text-anchor="middle" font-family="Arial" font-size="24" font-weight="700" fill="#111827">Tài sản website</text>
+<text x="255.0" y="471" text-anchor="middle" font-family="Arial" font-size="19" font-weight="400" fill="#64748B">asset</text>
+<polyline points="60,486 450,486" fill="none" stroke="#475569" stroke-width="2" stroke-linejoin="round"/>
+<text x="78" y="514" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">PK  id</text>
+<text x="78" y="551" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">code</text>
+<text x="78" y="588" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">FK  current_scope_id</text>
+<text x="78" y="625" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">status</text>
+<rect x="510" y="410" width="390" height="244" rx="12" fill="#FFFFFF" stroke="#475569" stroke-width="3"/>
+<path d="M522,410 H888 Q900,410 900,422 V486 H510 V422 Q510,410 522,410 Z" fill="#EAF2FF" stroke="#475569" stroke-width="3"/>
+<text x="705.0" y="446" text-anchor="middle" font-family="Arial" font-size="24" font-weight="700" fill="#111827">Phiên bản phạm vi</text>
+<text x="705.0" y="471" text-anchor="middle" font-family="Arial" font-size="19" font-weight="400" fill="#64748B">asset_scope_revision</text>
+<polyline points="510,486 900,486" fill="none" stroke="#475569" stroke-width="2" stroke-linejoin="round"/>
+<text x="528" y="514" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">PK  id</text>
+<text x="528" y="551" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">FK  asset_id</text>
+<text x="528" y="588" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">version_no</text>
+<text x="528" y="625" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">status</text>
+<rect x="960" y="120" width="420" height="281" rx="12" fill="#FFFFFF" stroke="#475569" stroke-width="3"/>
+<path d="M972,120 H1368 Q1380,120 1380,132 V196 H960 V132 Q960,120 972,120 Z" fill="#EAF2FF" stroke="#475569" stroke-width="3"/>
+<text x="1170.0" y="156" text-anchor="middle" font-family="Arial" font-size="24" font-weight="700" fill="#111827">Hồ sơ quét ZAP</text>
+<text x="1170.0" y="181" text-anchor="middle" font-family="Arial" font-size="19" font-weight="400" fill="#64748B">zap_scan_profile</text>
+<polyline points="960,196 1380,196" fill="none" stroke="#475569" stroke-width="2" stroke-linejoin="round"/>
+<text x="978" y="224" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">PK  id</text>
+<text x="978" y="261" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">code + version_no</text>
+<text x="978" y="298" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">status</text>
+<text x="978" y="335" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">active_scan_enabled</text>
+<text x="978" y="372" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">FK  service_user_id</text>
+<rect x="960" y="480" width="420" height="355" rx="12" fill="#FFFFFF" stroke="#475569" stroke-width="3"/>
+<path d="M972,480 H1368 Q1380,480 1380,492 V556 H960 V492 Q960,480 972,480 Z" fill="#EAF2FF" stroke="#475569" stroke-width="3"/>
+<text x="1170.0" y="516" text-anchor="middle" font-family="Arial" font-size="24" font-weight="700" fill="#111827">Lịch quét</text>
+<text x="1170.0" y="541" text-anchor="middle" font-family="Arial" font-size="19" font-weight="400" fill="#64748B">scan_schedule</text>
+<polyline points="960,556 1380,556" fill="none" stroke="#475569" stroke-width="2" stroke-linejoin="round"/>
+<text x="978" y="584" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">PK  id</text>
+<text x="978" y="621" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">FK  asset_id</text>
+<text x="978" y="658" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">FK  scope_id</text>
+<text x="978" y="695" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">FK  zap_profile_id</text>
+<text x="978" y="732" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">automation_enabled</text>
+<text x="978" y="769" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">next_due_at</text>
+<text x="978" y="806" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">status</text>
+<rect x="1450" y="480" width="410" height="318" rx="12" fill="#FFFFFF" stroke="#475569" stroke-width="3"/>
+<path d="M1462,480 H1848 Q1860,480 1860,492 V556 H1450 V492 Q1450,480 1462,480 Z" fill="#EAF2FF" stroke="#475569" stroke-width="3"/>
+<text x="1655.0" y="516" text-anchor="middle" font-family="Arial" font-size="24" font-weight="700" fill="#111827">Lần quét nghiệp vụ</text>
+<text x="1655.0" y="541" text-anchor="middle" font-family="Arial" font-size="19" font-weight="400" fill="#64748B">scan_occurrence</text>
+<polyline points="1450,556 1860,556" fill="none" stroke="#475569" stroke-width="2" stroke-linejoin="round"/>
+<text x="1468" y="584" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">PK  id</text>
+<text x="1468" y="621" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">FK  asset_id</text>
+<text x="1468" y="658" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">FK  scope_id</text>
+<text x="1468" y="695" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">FK  schedule_id</text>
+<text x="1468" y="732" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">purpose</text>
+<text x="1468" y="769" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">status</text>
+<rect x="1930" y="410" width="420" height="318" rx="12" fill="#FFFFFF" stroke="#475569" stroke-width="3"/>
+<path d="M1942,410 H2338 Q2350,410 2350,422 V486 H1930 V422 Q1930,410 1942,410 Z" fill="#EAF2FF" stroke="#475569" stroke-width="3"/>
+<text x="2140.0" y="446" text-anchor="middle" font-family="Arial" font-size="24" font-weight="700" fill="#111827">Phiên thực thi ZAP</text>
+<text x="2140.0" y="471" text-anchor="middle" font-family="Arial" font-size="19" font-weight="400" fill="#64748B">zap_execution</text>
+<polyline points="1930,486 2350,486" fill="none" stroke="#475569" stroke-width="2" stroke-linejoin="round"/>
+<text x="1948" y="514" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">PK  id</text>
+<text x="1948" y="551" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">FK/UQ  scan_id</text>
+<text x="1948" y="588" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">FK  profile_id</text>
+<text x="1948" y="625" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">FK/UQ  import_batch_id</text>
+<text x="1948" y="662" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">status</text>
+<text x="1948" y="699" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">configuration_snapshot</text>
+<rect x="2420" y="170" width="390" height="281" rx="12" fill="#FFFFFF" stroke="#475569" stroke-width="3"/>
+<path d="M2432,170 H2798 Q2810,170 2810,182 V246 H2420 V182 Q2420,170 2432,170 Z" fill="#EAF2FF" stroke="#475569" stroke-width="3"/>
+<text x="2615.0" y="206" text-anchor="middle" font-family="Arial" font-size="24" font-weight="700" fill="#111827">Artifact báo cáo</text>
+<text x="2615.0" y="231" text-anchor="middle" font-family="Arial" font-size="19" font-weight="400" fill="#64748B">zap_artifact</text>
+<polyline points="2420,246 2810,246" fill="none" stroke="#475569" stroke-width="2" stroke-linejoin="round"/>
+<text x="2438" y="274" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">PK  id</text>
+<text x="2438" y="311" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">FK  execution_id</text>
+<text x="2438" y="348" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">artifact_kind</text>
+<text x="2438" y="385" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">object_key</text>
+<text x="2438" y="422" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">sha256</text>
+<rect x="2860" y="480" width="390" height="318" rx="12" fill="#FFFFFF" stroke="#475569" stroke-width="3"/>
+<path d="M2872,480 H3238 Q3250,480 3250,492 V556 H2860 V492 Q2860,480 2872,480 Z" fill="#EAF2FF" stroke="#475569" stroke-width="3"/>
+<text x="3055.0" y="516" text-anchor="middle" font-family="Arial" font-size="24" font-weight="700" fill="#111827">Lô tiếp nhận</text>
+<text x="3055.0" y="541" text-anchor="middle" font-family="Arial" font-size="19" font-weight="400" fill="#64748B">import_batch</text>
+<polyline points="2860,556 3250,556" fill="none" stroke="#475569" stroke-width="2" stroke-linejoin="round"/>
+<text x="2878" y="584" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">PK  id</text>
+<text x="2878" y="621" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">FK  asset_id</text>
+<text x="2878" y="658" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">FK  scan_id</text>
+<text x="2878" y="695" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">file_sha256</text>
+<text x="2878" y="732" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">raw_object_key</text>
+<text x="2878" y="769" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">status</text>
+<rect x="620" y="1130" width="410" height="281" rx="12" fill="#FFFFFF" stroke="#475569" stroke-width="3"/>
+<path d="M632,1130 H1018 Q1030,1130 1030,1142 V1206 H620 V1142 Q620,1130 632,1130 Z" fill="#EAF2FF" stroke="#475569" stroke-width="3"/>
+<text x="825.0" y="1166" text-anchor="middle" font-family="Arial" font-size="24" font-weight="700" fill="#111827">Phát hiện</text>
+<text x="825.0" y="1191" text-anchor="middle" font-family="Arial" font-size="19" font-weight="400" fill="#64748B">finding</text>
+<polyline points="620,1206 1030,1206" fill="none" stroke="#475569" stroke-width="2" stroke-linejoin="round"/>
+<text x="638" y="1234" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">PK  id</text>
+<text x="638" y="1271" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">FK  asset_id</text>
+<text x="638" y="1308" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">fingerprint</text>
+<text x="638" y="1345" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">FK  current_review_id</text>
+<text x="638" y="1382" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">status</text>
+<rect x="1100" y="1050" width="400" height="244" rx="12" fill="#FFFFFF" stroke="#475569" stroke-width="3"/>
+<path d="M1112,1050 H1488 Q1500,1050 1500,1062 V1126 H1100 V1062 Q1100,1050 1112,1050 Z" fill="#EAF2FF" stroke="#475569" stroke-width="3"/>
+<text x="1300.0" y="1086" text-anchor="middle" font-family="Arial" font-size="24" font-weight="700" fill="#111827">Lần xuất hiện</text>
+<text x="1300.0" y="1111" text-anchor="middle" font-family="Arial" font-size="19" font-weight="400" fill="#64748B">finding_occurrence</text>
+<polyline points="1100,1126 1500,1126" fill="none" stroke="#475569" stroke-width="2" stroke-linejoin="round"/>
+<text x="1118" y="1154" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">PK  id</text>
+<text x="1118" y="1191" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">FK  finding_id</text>
+<text x="1118" y="1228" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">FK  scan_id</text>
+<text x="1118" y="1265" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">observed_at</text>
+<rect x="620" y="1510" width="410" height="244" rx="12" fill="#FFFFFF" stroke="#475569" stroke-width="3"/>
+<path d="M632,1510 H1018 Q1030,1510 1030,1522 V1586 H620 V1522 Q620,1510 632,1510 Z" fill="#EAF2FF" stroke="#475569" stroke-width="3"/>
+<text x="825.0" y="1546" text-anchor="middle" font-family="Arial" font-size="24" font-weight="700" fill="#111827">Đánh giá ATTT</text>
+<text x="825.0" y="1571" text-anchor="middle" font-family="Arial" font-size="19" font-weight="400" fill="#64748B">finding_review</text>
+<polyline points="620,1586 1030,1586" fill="none" stroke="#475569" stroke-width="2" stroke-linejoin="round"/>
+<text x="638" y="1614" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">PK  id</text>
+<text x="638" y="1651" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">FK  finding_id</text>
+<text x="638" y="1688" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">proposed_severity</text>
+<text x="638" y="1725" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">status</text>
+<rect x="1580" y="1420" width="400" height="244" rx="12" fill="#FFFFFF" stroke="#475569" stroke-width="3"/>
+<path d="M1592,1420 H1968 Q1980,1420 1980,1432 V1496 H1580 V1432 Q1580,1420 1592,1420 Z" fill="#EAF2FF" stroke="#475569" stroke-width="3"/>
+<text x="1780.0" y="1456" text-anchor="middle" font-family="Arial" font-size="24" font-weight="700" fill="#111827">Phiếu khắc phục</text>
+<text x="1780.0" y="1481" text-anchor="middle" font-family="Arial" font-size="19" font-weight="400" fill="#64748B">remediation_ticket</text>
+<polyline points="1580,1496 1980,1496" fill="none" stroke="#475569" stroke-width="2" stroke-linejoin="round"/>
+<text x="1598" y="1524" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">PK  id</text>
+<text x="1598" y="1561" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">FK  finding_id</text>
+<text x="1598" y="1598" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">code</text>
+<text x="1598" y="1635" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">FK  current_event_id</text>
+<rect x="2110" y="1190" width="410" height="281" rx="12" fill="#FFFFFF" stroke="#475569" stroke-width="3"/>
+<path d="M2122,1190 H2508 Q2520,1190 2520,1202 V1266 H2110 V1202 Q2110,1190 2122,1190 Z" fill="#EAF2FF" stroke="#475569" stroke-width="3"/>
+<text x="2315.0" y="1226" text-anchor="middle" font-family="Arial" font-size="24" font-weight="700" fill="#111827">Yêu cầu xác minh</text>
+<text x="2315.0" y="1251" text-anchor="middle" font-family="Arial" font-size="19" font-weight="400" fill="#64748B">verification_request</text>
+<polyline points="2110,1266 2520,1266" fill="none" stroke="#475569" stroke-width="2" stroke-linejoin="round"/>
+<text x="2128" y="1294" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">PK  id</text>
+<text x="2128" y="1331" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">FK  finding_id</text>
+<text x="2128" y="1368" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">FK  ticket_id</text>
+<text x="2128" y="1405" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">FK  scope_id</text>
+<text x="2128" y="1442" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">status</text>
+<rect x="2700" y="1400" width="420" height="281" rx="12" fill="#FFFFFF" stroke="#475569" stroke-width="3"/>
+<path d="M2712,1400 H3108 Q3120,1400 3120,1412 V1476 H2700 V1412 Q2700,1400 2712,1400 Z" fill="#EAF2FF" stroke="#475569" stroke-width="3"/>
+<text x="2910.0" y="1436" text-anchor="middle" font-family="Arial" font-size="24" font-weight="700" fill="#111827">Kết quả xác minh</text>
+<text x="2910.0" y="1461" text-anchor="middle" font-family="Arial" font-size="19" font-weight="400" fill="#64748B">verification_result</text>
+<polyline points="2700,1476 3120,1476" fill="none" stroke="#475569" stroke-width="2" stroke-linejoin="round"/>
+<text x="2718" y="1504" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">PK  id</text>
+<text x="2718" y="1541" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">FK  request_id</text>
+<text x="2718" y="1578" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">FK  scan_id</text>
+<text x="2718" y="1615" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">FK  batch_id</text>
+<text x="2718" y="1652" text-anchor="start" font-family="Arial" font-size="18" font-weight="400" fill="#111827">outcome</text>
+<polyline points="450,532.0 510,532.0" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="388.0" y="513.0" width="184" height="38" rx="0" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="0"/>
+<text x="480.0" y="535.0" text-anchor="middle" font-family="Arial" font-size="16" font-weight="400" fill="#64748B">có nhiều phiên bản</text>
+<polyline points="450,532.0 720,360 920,360 920,600 960,657.5" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="828" y="341" width="184" height="38" rx="0" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="0"/>
+<text x="920" y="363" text-anchor="middle" font-family="Arial" font-size="16" font-weight="400" fill="#64748B">lập lịch</text>
+<polyline points="900,532.0 960,657.5" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="838.0" y="575.75" width="184" height="38" rx="0" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="0"/>
+<text x="930.0" y="597.75" text-anchor="middle" font-family="Arial" font-size="16" font-weight="400" fill="#64748B">scope đã duyệt</text>
+<polyline points="1170.0,401 1170.0,480" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="1078.0" y="421.5" width="184" height="38" rx="0" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="0"/>
+<text x="1170.0" y="443.5" text-anchor="middle" font-family="Arial" font-size="16" font-weight="400" fill="#64748B">cấu hình</text>
+<polyline points="1380,657.5 1450,639.0" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="1323.0" y="629.25" width="184" height="38" rx="0" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="0"/>
+<text x="1415.0" y="651.25" text-anchor="middle" font-family="Arial" font-size="16" font-weight="400" fill="#64748B">tạo kỳ quét</text>
+<polyline points="1860,639.0 1930,569.0" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="1803.0" y="585.0" width="184" height="38" rx="0" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="0"/>
+<text x="1895.0" y="607.0" text-anchor="middle" font-family="Arial" font-size="16" font-weight="400" fill="#64748B">1 — 0..1</text>
+<polyline points="1380,260.5 1650,250 2140,250 2140.0,410" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="2048" y="231" width="184" height="38" rx="0" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="0"/>
+<text x="2140" y="253" text-anchor="middle" font-family="Arial" font-size="16" font-weight="400" fill="#64748B">snapshot profile</text>
+<polyline points="2350,569.0 2380,520 2615,520 2615.0,451" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="2523" y="501" width="184" height="38" rx="0" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="0"/>
+<text x="2615" y="523" text-anchor="middle" font-family="Arial" font-size="16" font-weight="400" fill="#64748B">sinh 1..n</text>
+<polyline points="1860,639.0 1900,830 2800,830 2860,639.0" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="2708" y="811" width="184" height="38" rx="0" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="0"/>
+<text x="2800" y="833" text-anchor="middle" font-family="Arial" font-size="16" font-weight="400" fill="#64748B">tạo lô tiếp nhận</text>
+<polyline points="2350,569.0 2600,650 2860,639.0" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="2508" y="631" width="184" height="38" rx="0" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="0"/>
+<text x="2600" y="653" text-anchor="middle" font-family="Arial" font-size="16" font-weight="400" fill="#64748B">import_batch_id</text>
+<polyline points="255.0,654 255,990 560,990 560,1250 620,1270.5" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="468" y="971" width="184" height="38" rx="0" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="0"/>
+<text x="560" y="993" text-anchor="middle" font-family="Arial" font-size="16" font-weight="400" fill="#64748B">sở hữu</text>
+<polyline points="1030,1270.5 1100,1172.0" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="973.0" y="1202.25" width="184" height="38" rx="0" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="0"/>
+<text x="1065.0" y="1224.25" text-anchor="middle" font-family="Arial" font-size="16" font-weight="400" fill="#64748B">tái xuất hiện</text>
+<polyline points="1655.0,798 1300.0,1050" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="1385.5" y="905.0" width="184" height="38" rx="0" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="0"/>
+<text x="1477.5" y="927.0" text-anchor="middle" font-family="Arial" font-size="16" font-weight="400" fill="#64748B">ghi nhận</text>
+<polyline points="825.0,1411 825.0,1510" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="733.0" y="1441.5" width="184" height="38" rx="0" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="0"/>
+<text x="825.0" y="1463.5" text-anchor="middle" font-family="Arial" font-size="16" font-weight="400" fill="#64748B">đánh giá</text>
+<polyline points="1030,1270.5 1300,1320 1300,1530 1580,1542.0" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="1208" y="1511" width="184" height="38" rx="0" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="0"/>
+<text x="1300" y="1533" text-anchor="middle" font-family="Arial" font-size="16" font-weight="400" fill="#64748B">khắc phục</text>
+<polyline points="1980,1542.0 2040,1530 2040,1320 2110,1330.5" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="1948" y="1301" width="184" height="38" rx="0" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="0"/>
+<text x="2040" y="1323" text-anchor="middle" font-family="Arial" font-size="16" font-weight="400" fill="#64748B">sau khắc phục</text>
+<polyline points="2520,1330.5 2700,1540.5" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="2518.0" y="1416.5" width="184" height="38" rx="0" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="0"/>
+<text x="2610.0" y="1438.5" text-anchor="middle" font-family="Arial" font-size="16" font-weight="400" fill="#64748B">kết quả</text>
+<polyline points="3055.0,798 3055,1080 2910,1080 2910.0,1400" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<rect x="2818" y="1061" width="184" height="38" rx="0" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="0"/>
+<text x="2910" y="1083" text-anchor="middle" font-family="Arial" font-size="16" font-weight="400" fill="#64748B">bằng chứng batch</text>
+</svg>

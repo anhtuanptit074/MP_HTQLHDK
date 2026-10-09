@@ -30,6 +30,8 @@ jobs:
         run: ./scripts/verify-stage10.ps1
       - name: Build backend
         run: dotnet build HTQLHDK.slnx --configuration Release
+      - name: Test backend
+        run: dotnet test HTQLHDK.slnx --configuration Release --no-build --filter 'TestCategory!=DatabaseIntegration'
       - name: Lint frontend
         working-directory: src/frontend
         run: npm run lint
@@ -79,7 +81,77 @@ jobs:
         run: psql -v ON_ERROR_STOP=1 -f ops/migrations/V001__baseline.psql
       - name: Verify baseline
         run: psql -v ON_ERROR_STOP=1 -f ops/migrations/verify_baseline.psql
+      - name: Apply ZAP automation migration
+        run: psql -v ON_ERROR_STOP=1 -f ops/migrations/V002__zap_automation.psql
+      - name: Verify ZAP automation migration
+        run: psql -v ON_ERROR_STOP=1 -f ops/migrations/verify_zap_automation.psql
       - name: Load synthetic fixture
         run: psql -v ON_ERROR_STOP=1 -f tests/fixtures/sql/load_test_fixture.psql
       - name: Prove migration rerun is a no-op
-        run: psql -v ON_ERROR_STOP=1 -f ops/migrations/V001__baseline.psql
+        run: |
+          psql -v ON_ERROR_STOP=1 -f ops/migrations/V001__baseline.psql
+          psql -v ON_ERROR_STOP=1 -f ops/migrations/V002__zap_automation.psql
+
+  core13-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17.11-alpine3.24
+        env:
+          POSTGRES_DB: htqlhdk_core_test_local
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ci_ephemeral_database_only
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d htqlhdk_core_test_local"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGDATABASE: htqlhdk_core_test_local
+      PGUSER: postgres
+      PGPASSWORD: ci_ephemeral_database_only
+      HTQLHDK_ENVIRONMENT: Local
+      HTQLHDK_SCHEMA_MODEL: core13
+      HTQLHDK_DB_HOST: 127.0.0.1
+      HTQLHDK_DB_PORT: 5432
+      HTQLHDK_DB_NAME: htqlhdk_core_test_local
+      HTQLHDK_DB_APP_USER: htqlhdk_ci_app
+      HTQLHDK_DB_APP_PASSWORD: ci_ephemeral_runtime_only
+      HTQLHDK_APP_ROOT: ${{ github.workspace }}/.codex_tmp/core-ci
+      HTQLHDK_TEST_ROOT: ${{ github.workspace }}/.codex_tmp/core-ci
+      HTQLHDK_TEST_URL: http://127.0.0.1:5002
+      HTQLHDK_TEST_DATABASE_URL: Host=127.0.0.1;Port=5432;Database=htqlhdk_core_test_local;Username=htqlhdk_ci_app;Password=ci_ephemeral_runtime_only;Timezone=UTC
+      ASPNETCORE_ENVIRONMENT: Development
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.400
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Apply the 13-table migrations
+        run: |
+          psql -v ON_ERROR_STOP=1 -f ops/core-migrations/V001__core13.sql
+          psql -v ON_ERROR_STOP=1 -f ops/core-migrations/V002__core_integrity.sql
+          psql -v ON_ERROR_STOP=1 <<'SQL'
+          CREATE ROLE htqlhdk_ci_app LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE PASSWORD 'ci_ephemeral_runtime_only';
+          GRANT CONNECT ON DATABASE htqlhdk_core_test_local TO htqlhdk_ci_app;
+          GRANT USAGE ON SCHEMA htqlhdk TO htqlhdk_ci_app;
+          GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA htqlhdk TO htqlhdk_ci_app;
+          GRANT USAGE,SELECT ON ALL SEQUENCES IN SCHEMA htqlhdk TO htqlhdk_ci_app;
+          SQL
+      - name: Build and seed the isolated test application
+        run: |
+          dotnet build HTQLHDK.slnx --configuration Release
+          dotnet src/backend/Htqlhdk.Api/bin/Release/net10.0/Htqlhdk.Api.dll --seed-local
+      - name: Verify HTTP workflows and worker integration
+        run: |
+          dotnet src/backend/Htqlhdk.Api/bin/Release/net10.0/Htqlhdk.Api.dll --urls "$HTQLHDK_TEST_URL" > .codex_tmp/core-ci/api.log 2>&1 &
+          api_pid=$!
+          trap 'kill "$api_pid"' EXIT
+          curl --fail --retry 20 --retry-connrefused --retry-delay 1 "$HTQLHDK_TEST_URL/health/ready"
+          node tests/core13/http-flow.mjs
+          dotnet test tests/Htqlhdk.Worker.Tests/Htqlhdk.Worker.Tests.csproj --configuration Release --no-build --filter 'TestCategory=DatabaseIntegration'

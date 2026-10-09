@@ -2,7 +2,7 @@
 
 ## 1. Phạm vi và động lực
 
-Kiến trúc phục vụ đúng bốn lát cắt F-01 Khai báo tài sản, F-02 Lịch quét, F-03 Nhập kết quả OWASP ZAP và F-04 Theo dõi khắc phục. OWASP ZAP do `SCAN_OPS` chạy bên ngoài. Hệ thống chỉ quản lý cấu hình đã duyệt, lịch/lần quét, tệp báo cáo được tải lên và workflow sau đó.
+Kiến trúc phục vụ đúng bốn nghiệp vụ F-01 Khai báo tài sản, F-02 Lịch quét, F-03 Nhập kết quả OWASP ZAP và F-04 Theo dõi khắc phục. OWASP ZAP do `SCAN_OPS` chạy bên ngoài. Hệ thống chỉ quản lý cấu hình đã duyệt, lịch/lần quét, tệp báo cáo được tải lên và workflow sau đó.
 
 Mục tiêu kiến trúc là mặc định từ chối, phân quyền theo vai trò + tài sản + nhiệm vụ, bảo vệ dữ liệu lỗ hổng, giữ lịch sử, chống nhập trùng và vận hành được khi khối lượng upload/parse tăng. Kiến trúc không giả định có giao dịch phân tán giữa PostgreSQL và kho object.
 
@@ -28,7 +28,7 @@ Nguồn chỉnh sửa: [`diagrams/01_system_context.puml`](diagrams/01_system_co
 
 ### 3.1. Web UI
 
-- Hiển thị dữ liệu đã che theo response của API; không tự quyết định quyền.
+- Hiển thị dữ liệu theo response của API; không tự quyết định quyền.
 - Không giữ access token trong `localStorage`; dùng phiên BFF/cookie `HttpOnly`, `Secure`, `SameSite` phù hợp luồng OIDC.
 - Encode output mặc định; không render HTML lấy từ ZAP; CSP hạn chế script/connect/frame.
 - Upload trực tiếp tới API bằng streaming; UI không nhận credential của object storage.
@@ -36,7 +36,7 @@ Nguồn chỉnh sửa: [`diagrams/01_system_context.puml`](diagrams/01_system_co
 
 ### 3.2. Backend API
 
-Pipeline cố định cho mỗi request: correlation ID → xác thực → CSRF khi dùng cookie → rate/size limit → authorization theo action/asset → validation → service/giao dịch → masking → audit → response an toàn.
+Pipeline cố định cho mỗi request: ID tương ứng → xác thực → CSRF khi dùng cookie → rate/size limit → authorization theo action/asset → validation → service/giao dịch → masking → audit → response an toàn.
 
 Các module bên trong cùng một deployable:
 

@@ -1,0 +1,56 @@
+@startuml
+left to right direction
+skinparam dpi 180
+skinparam linetype ortho
+skinparam shadowing false
+skinparam entityFontSize 16
+skinparam defaultFontName Arial
+hide circle
+entity "Người dùng\napp_user" as U {
+  * id : bigint <<PK>>
+  --
+  username : varchar <<UK>>
+  account_kind : varchar
+}
+entity "Vai trò\nuser_role" as R {
+  * id : bigint <<PK>>
+  --
+  user_id : bigint <<FK>>
+  asset_id : bigint <<FK?>>
+  role_code : varchar
+}
+entity "Tài sản\nasset" as A {
+  * id : bigint <<PK>>
+  --
+  code : varchar <<UK>>
+  owner_id : bigint <<FK>>
+  security_officer_id : bigint <<FK>>
+}
+entity "Phiên bản phạm vi\nasset_scope_revision" as S {
+  * id : bigint <<PK>>
+  --
+  asset_id : bigint <<FK>>
+  version_no : integer
+  status : varchar
+}
+entity "Quy tắc URL\nasset_scope_rule" as Q {
+  * id : bigint <<PK>>
+  --
+  scope_id : bigint <<FK>>
+  effect : Include/Exclude
+  target_value : text
+}
+entity "Khung giờ quét\nasset_scan_window" as W {
+  * id : bigint <<PK>>
+  --
+  scope_id : bigint <<FK>>
+  weekday_iso : smallint
+  timezone : text
+}
+U ||--o{ R
+A |o--o{ R
+U ||--o{ A
+A ||--o{ S
+S ||--o{ Q
+S ||--o{ W
+@enduml

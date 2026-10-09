@@ -4,5 +4,7 @@
     <RootNamespace>Htqlhdk.Api</RootNamespace>
     <AssemblyName>Htqlhdk.Api</AssemblyName>
   </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Htqlhdk.Core/Htqlhdk.Core.csproj" />
+  </ItemGroup>
 </Project>
-

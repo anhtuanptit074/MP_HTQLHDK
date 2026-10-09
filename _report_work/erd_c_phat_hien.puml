@@ -1,0 +1,54 @@
+@startuml
+top to bottom direction
+skinparam dpi 180
+skinparam linetype ortho
+skinparam shadowing false
+skinparam entityFontSize 16
+skinparam defaultFontName Arial
+hide circle
+entity "Tài sản\nasset" as A {
+  * id : bigint <<PK>>
+  --
+  code : varchar <<UK>>
+}
+entity "Lần quét\nscan_run" as X {
+  * id : bigint <<PK>>
+  --
+  plan_id : bigint <<FK>>
+  report_status : varchar
+}
+entity "Phát hiện\nfinding" as F {
+  * id : bigint <<PK>>
+  --
+  asset_id : bigint <<FK>>
+  fingerprint : char(64)
+  final_severity : varchar
+  status : varchar
+}
+entity "Lần xuất hiện\nfinding_occurrence" as O {
+  * id : bigint <<PK>>
+  --
+  finding_id : bigint <<FK>>
+  scan_run_id : bigint <<FK>>
+  source_severity : varchar
+}
+entity "Phiếu khắc phục\nremediation_ticket" as T {
+  * id : bigint <<PK>>
+  --
+  finding_id : bigint <<FK,UK>>
+  assignee_id : bigint <<FK>>
+  due_at : timestamptz
+}
+entity "Kế hoạch xác minh\nscan_plan" as P {
+  * id : bigint <<PK>>
+  --
+  remediation_ticket_id : bigint <<FK?>>
+  plan_kind : Verification
+}
+A ||--o{ F
+F ||--o{ O
+X ||--o{ O
+F ||--o| T
+T |o--o{ P
+P ||--o{ X
+@enduml

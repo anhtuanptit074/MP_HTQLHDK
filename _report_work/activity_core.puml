@@ -1,0 +1,18 @@
+@startuml
+skinparam dpi 180
+skinparam defaultFontName Arial
+skinparam defaultFontSize 18
+skinparam shadowing false
+start
+:F-01: khai báo tài sản, phạm vi, khung giờ;
+:Chủ tài sản xác nhận; ATTT phê duyệt;
+:F-02: lập lịch và chọn hồ sơ ZAP;
+:Worker kiểm điều kiện, tạo lần quét;
+:ZAP quét mục tiêu đã được phép;
+:F-03: nhận, kiểm tra và lưu báo cáo;
+:Chuẩn hóa, chống trùng phát hiện;
+:ATTT xác nhận mức độ và giao phiếu;
+:F-04: khắc phục, nộp bằng chứng;
+:Quét xác minh; ATTT đóng hoặc mở lại;
+stop
+@enduml

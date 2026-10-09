@@ -1,0 +1,5 @@
+{
+  "file": "ops/core-migrations/V002__core_integrity.sql",
+  "version": "V002",
+  "sha256": "60a80d5d1be79dabf3b0480ec8c214c1d64afe76936e61d6a6720cef4aec1550"
+}

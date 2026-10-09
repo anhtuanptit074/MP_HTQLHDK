@@ -2,6 +2,8 @@
 
 ## 1. Điều kiện tiên quyết
 
+Trên máy đã chuẩn bị môi trường ngày 2026-10-05, Node/npm, Docker và PowerShell 7 đã có sẵn. SDK .NET 10.0.400 nằm ở `.codex_tmp/dotnet`; các script tự nhận diện SDK này. Không cần thêm SDK vào PATH toàn hệ thống.
+
 - Git 2.50+.
 - Node.js 24 LTS hoặc mới hơn trong cùng major được CI chấp nhận; npm 11+.
 - .NET SDK đúng `global.json` (10.0.400, không prerelease).
@@ -17,6 +19,40 @@
 5. Chạy `./scripts/test.ps1`.
 
 Frontend chạy bằng `npm run dev` trong `src/frontend`. API chạy bằng `dotnet run --project src/backend/Htqlhdk.Api`; worker mặc định không bật job nghiệp vụ ở giai đoạn 10.
+
+### Khởi động nhanh trên máy đã chuẩn bị
+
+Mở Docker Desktop, rồi chạy tại thư mục gốc dự án:
+
+```powershell
+.\start-local.cmd
+```
+
+Lệnh này tự tìm PowerShell 7, nhận diện SDK local, áp dụng/xác minh migration, chuẩn bị tài khoản database ứng dụng và chạy API/frontend ở nền. Dữ liệu hiện có được giữ; không nạp lại fixture. Các địa chỉ:
+
+- Frontend: `http://127.0.0.1:5173/`.
+- API: `http://127.0.0.1:5000/`.
+- Health: `http://127.0.0.1:5000/health/live`.
+- PostgreSQL: `127.0.0.1:54329`, database `htqlhdk_local` (hoặc giá trị trong `.env.local`).
+
+Dừng API/frontend:
+
+```powershell
+.\start-local.cmd -Stop
+```
+
+PostgreSQL vẫn chạy. Log và PID local nằm trong `.codex_tmp/local-run/`, không đưa vào Git. `start-local.cmd` sử dụng PowerShell 7 trên PATH hoặc bản đi kèm runtime Codex trên máy này.
+
+Trong PowerShell 7, chạy kiểm tra mà giữ dữ liệu PostgreSQL hiện tại:
+
+```powershell
+.\scripts\test.ps1
+.\scripts\migrate.ps1
+```
+
+`test.ps1 -IncludeDatabase` nạp lại fixture và thay thế dữ liệu nghiệp vụ local. Chỉ dùng khi chủ động muốn đặt lại bộ dữ liệu thử.
+
+Kết quả chuẩn bị và giới hạn chạy thử nằm trong [báo cáo môi trường local](09_local_readiness.md).
 
 ## 3. Lặp lại từ trạng thái sạch
 
@@ -35,4 +71,3 @@ Migration V001 có advisory lock, checksum và trạng thái `Running/Applied`. 
 ## 5. Kiểm tra trước pull request
 
 Chạy `./scripts/test.ps1 -IncludeDatabase`. Kết quả phải bao gồm build backend, lint/format/test/build frontend, kiểm OpenAPI/UI/database artifact, migration và fixture trên database sạch.
-

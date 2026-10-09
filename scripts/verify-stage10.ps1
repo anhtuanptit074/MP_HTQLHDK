@@ -1,6 +1,8 @@
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
+. (Join-Path $PSScriptRoot 'use-local-tools.ps1')
+
 $root = Split-Path -Parent $PSScriptRoot
 $failures = [System.Collections.Generic.List[string]]::new()
 
@@ -15,7 +17,9 @@ $requiredFiles = @(
     'src/backend/Htqlhdk.Worker/Htqlhdk.Worker.csproj',
     'src/frontend/package.json', 'src/frontend/package-lock.json',
     'ops/migrations/V001__baseline.psql', 'ops/migrations/V001__manifest.json',
+    'ops/migrations/V002__zap_automation.psql', 'ops/migrations/V002__manifest.json',
     'ops/migrations/verify_baseline.psql', 'ops/migrations/verify_migration.mjs',
+    'ops/migrations/verify_zap_automation.psql', 'ops/migrations/verify_zap_automation.mjs',
     'tests/fixtures/sql/load_test_fixture.psql',
     '.github/workflows/ci.yml', '.github/workflows/dependency-review.yml',
     '.github/dependabot.yml', '.github/pull_request_template.md',
@@ -43,20 +47,22 @@ foreach ($version in $allVersions) {
     Assert-True ($version -match '^\d+\.\d+\.\d+$') "Frontend dependency is not exact: $version"
 }
 
-$manifest = Get-Content -Raw -LiteralPath (Join-Path $root 'ops/migrations/V001__manifest.json') | ConvertFrom-Json
-foreach ($file in $manifest.files) {
-    $fullPath = Join-Path $root $file.path
-    Assert-True (Test-Path -LiteralPath $fullPath) "Migration source missing: $($file.path)"
-    if (Test-Path -LiteralPath $fullPath) {
-        # Git checkout co the tao LF tren Linux va CRLF tren Windows. Manifest khoa
-        # noi dung UTF-8/LF chuan hoa de cung mot migration co cung checksum moi noi.
-        $text = [System.IO.File]::ReadAllText($fullPath, [System.Text.Encoding]::UTF8)
-        $canonicalText = $text.Replace("`r`n", "`n").Replace("`r", "`n")
-        $canonicalBytes = [System.Text.Encoding]::UTF8.GetBytes($canonicalText)
-        $actual = [Convert]::ToHexString(
-            [System.Security.Cryptography.SHA256]::HashData($canonicalBytes)
-        ).ToLowerInvariant()
-        Assert-True ($actual -eq $file.sha256) "Migration checksum drift: $($file.path)"
+foreach ($manifestPath in @('ops/migrations/V001__manifest.json', 'ops/migrations/V002__manifest.json')) {
+    $manifest = Get-Content -Raw -LiteralPath (Join-Path $root $manifestPath) | ConvertFrom-Json
+    foreach ($file in $manifest.files) {
+        $fullPath = Join-Path $root $file.path
+        Assert-True (Test-Path -LiteralPath $fullPath) "Migration source missing: $($file.path)"
+        if (Test-Path -LiteralPath $fullPath) {
+            # Git checkout co the tao LF tren Linux va CRLF tren Windows. Manifest khoa
+            # noi dung UTF-8/LF chuan hoa de cung mot migration co cung checksum moi noi.
+            $text = [System.IO.File]::ReadAllText($fullPath, [System.Text.Encoding]::UTF8)
+            $canonicalText = $text.Replace("`r`n", "`n").Replace("`r", "`n")
+            $canonicalBytes = [System.Text.Encoding]::UTF8.GetBytes($canonicalText)
+            $actual = [Convert]::ToHexString(
+                [System.Security.Cryptography.SHA256]::HashData($canonicalBytes)
+            ).ToLowerInvariant()
+            Assert-True ($actual -eq $file.sha256) "Migration checksum drift: $($file.path)"
+        }
     }
 }
 
@@ -111,6 +117,10 @@ if (Test-Path -LiteralPath $pgliteRuntime) {
     if ($LASTEXITCODE -ne 0) { $failures.Add('Database artifact validation failed.') }
     & node (Join-Path $root 'ops/migrations/verify_migration.mjs') $pgliteRuntime
     if ($LASTEXITCODE -ne 0) { $failures.Add('Migration repeatability validation failed.') }
+    & node (Join-Path $root 'ops/migrations/verify_zap_automation.mjs') $pgliteRuntime
+    if ($LASTEXITCODE -ne 0) { $failures.Add('ZAP automation migration validation failed.') }
+    & node (Join-Path $root 'ops/core-migrations/verify-core13.mjs') $pgliteRuntime
+    if ($LASTEXITCODE -ne 0) { $failures.Add('Core13 migration/schema guards failed.') }
 }
 
 if ($failures.Count -gt 0) {

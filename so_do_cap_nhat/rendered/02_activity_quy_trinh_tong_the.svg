@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2400" height="2600" viewBox="0 0 2400 2600">
+<defs><marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L12,6 L0,12 z" fill="#475569"/></marker></defs>
+<rect width="2400" height="2600" fill="#FFFFFF"/>
+<text x="1200.0" y="68" text-anchor="middle" font-family="Arial" font-size="34" font-weight="700" fill="#111827">Sơ đồ hoạt động — quy trình quét và khắc phục tự động</text>
+<text x="1200.0" y="98" text-anchor="middle" font-family="Arial" font-size="20" font-weight="400" fill="#64748B">Luồng chuẩn và các nhánh kiểm soát ngoại lệ</text>
+<rect x="40" y="110" width="570" height="2430" rx="0" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="2"/>
+<rect x="40" y="110" width="570" height="60" fill="#EAF2FF" stroke="#CBD5E1" stroke-width="2"/>
+<text x="325.0" y="146" text-anchor="middle" font-family="Arial" font-size="22" font-weight="700" fill="#111827">Chủ tài sản / ATTT</text>
+<rect x="625" y="110" width="570" height="2430" rx="0" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="2"/>
+<rect x="625" y="110" width="570" height="60" fill="#EAF2FF" stroke="#CBD5E1" stroke-width="2"/>
+<text x="910.0" y="146" text-anchor="middle" font-family="Arial" font-size="22" font-weight="700" fill="#111827">Vận hành / Khắc phục</text>
+<rect x="1210" y="110" width="570" height="2430" rx="0" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="2"/>
+<rect x="1210" y="110" width="570" height="60" fill="#EAF2FF" stroke="#CBD5E1" stroke-width="2"/>
+<text x="1495.0" y="146" text-anchor="middle" font-family="Arial" font-size="22" font-weight="700" fill="#111827">Bộ lập lịch &amp; điều phối</text>
+<rect x="1795" y="110" width="570" height="2430" rx="0" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="2"/>
+<rect x="1795" y="110" width="570" height="60" fill="#EAF2FF" stroke="#CBD5E1" stroke-width="2"/>
+<text x="2080.0" y="146" text-anchor="middle" font-family="Arial" font-size="22" font-weight="700" fill="#111827">OWASP ZAP</text>
+<circle cx="325" cy="215" r="18" fill="#111827" stroke="#111827" stroke-width="3"/>
+<rect x="110" y="270" width="430" height="92" rx="18" fill="#FFFFFF" stroke="#475569" stroke-width="3"/>
+<text x="325.0" y="308" text-anchor="middle" font-family="Arial" font-size="20" font-weight="700" fill="#111827">Khai báo tài sản, phạm vi</text>
+<text x="325.0" y="334" text-anchor="middle" font-family="Arial" font-size="20" font-weight="700" fill="#111827">và khung giờ quét</text>
+<rect x="110" y="410" width="430" height="92" rx="18" fill="#FFFFFF" stroke="#475569" stroke-width="3"/>
+<text x="325.0" y="448" text-anchor="middle" font-family="Arial" font-size="20" font-weight="700" fill="#111827">Xác nhận và phê duyệt</text>
+<text x="325.0" y="474" text-anchor="middle" font-family="Arial" font-size="20" font-weight="700" fill="#111827">tài sản / phạm vi</text>
+<rect x="695" y="550" width="430" height="92" rx="18" fill="#FFFFFF" stroke="#475569" stroke-width="3"/>
+<text x="910.0" y="588" text-anchor="middle" font-family="Arial" font-size="20" font-weight="700" fill="#111827">Tạo hồ sơ quét ZAP</text>
+<text x="910.0" y="614" text-anchor="middle" font-family="Arial" font-size="20" font-weight="700" fill="#111827">có phiên bản</text>
+<rect x="110" y="690" width="430" height="92" rx="18" fill="#FFFFFF" stroke="#475569" stroke-width="3"/>
+<text x="325.0" y="728" text-anchor="middle" font-family="Arial" font-size="20" font-weight="700" fill="#111827">Phê duyệt hồ sơ</text>
+<text x="325.0" y="754" text-anchor="middle" font-family="Arial" font-size="20" font-weight="700" fill="#111827">và kích hoạt lịch</text>
+<rect x="1280" y="830" width="430" height="92" rx="18" fill="#FFFFFF" stroke="#475569" stroke-width="3"/>
+<text x="1495.0" y="868" text-anchor="middle" font-family="Arial" font-size="20" font-weight="700" fill="#111827">Phát hiện lịch đến hạn</text>
+<text x="1495.0" y="894" text-anchor="middle" font-family="Arial" font-size="20" font-weight="700" fill="#111827">và tạo scan_occurrence</text>
+<polygon points="1495.0,975.0 1675.0,1050 1495.0,1125.0 1315.0,1050" fill="#FFF7ED" stroke="#475569" stroke-width="3"/>
+<text x="1495.0" y="1034" text-anchor="middle" font-family="Arial" font-size="18" font-weight="700" fill="#111827">Asset, scope, profile</text>
+<text x="1495.0" y="1056" text-anchor="middle" font-family="Arial" font-size="18" font-weight="700" fill="#111827">và khung giờ hợp lệ?</text>
+<rect x="695" y="980" width="430" height="100" rx="18" fill="#FEF2F2" stroke="#475569" stroke-width="3"/>
+<text x="910.0" y="1018" text-anchor="middle" font-family="Arial" font-size="20" font-weight="700" fill="#111827">Ghi Missed/Failed</text>
+<text x="910.0" y="1044" text-anchor="middle" font-family="Arial" font-size="20" font-weight="700" fill="#111827">và rà soát ngoại lệ</text>
+<rect x="1280" y="1180" width="430" height="92" rx="18" fill="#FFFFFF" stroke="#475569" stroke-width="3"/>
+<text x="1495.0" y="1218" text-anchor="middle" font-family="Arial" font-size="20" font-weight="700" fill="#111827">Tạo zap_execution</text>
+<text x="1495.0" y="1244" text-anchor="middle" font-family="Arial" font-size="20" font-weight="700" fill="#111827">và snapshot cấu hình</text>
+<rect x="1865" y="1320" width="430" height="110" rx="18" fill="#FFFFFF" stroke="#475569" stroke-width="3"/>
+<text x="2080.0" y="1358" text-anchor="middle" font-family="Arial" font-size="20" font-weight="700" fill="#111827">Chạy spider, passive scan</text>
+<text x="2080.0" y="1384" text-anchor="middle" font-family="Arial" font-size="20" font-weight="700" fill="#111827">và active scan nếu được duyệt</text>
+<polygon points="2080.0,1475.0 2245.0,1545 2080.0,1615.0 1915.0,1545" fill="#FFF7ED" stroke="#475569" stroke-width="3"/>
+<text x="2080.0" y="1533" text-anchor="middle" font-family="Arial" font-size="18" font-weight="700" fill="#111827">Hoàn tất</text>
+<text x="2080.0" y="1555" text-anchor="middle" font-family="Arial" font-size="18" font-weight="700" fill="#111827">không lỗi / timeout?</text>
+<rect x="695" y="1490" width="430" height="110" rx="18" fill="#FEF2F2" stroke="#475569" stroke-width="3"/>
+<text x="910.0" y="1528" text-anchor="middle" font-family="Arial" font-size="20" font-weight="700" fill="#111827">Đánh dấu Failed / Timed Out</text>
+<text x="910.0" y="1554" text-anchor="middle" font-family="Arial" font-size="20" font-weight="700" fill="#111827">hoặc Cancelled; xử lý ngoại lệ</text>
+<rect x="1280" y="1690" width="430" height="110" rx="18" fill="#FFFFFF" stroke="#475569" stroke-width="3"/>
+<text x="1495.0" y="1728" text-anchor="middle" font-family="Arial" font-size="20" font-weight="700" fill="#111827">Thu báo cáo, kiểm SHA-256,</text>
+<text x="1495.0" y="1754" text-anchor="middle" font-family="Arial" font-size="20" font-weight="700" fill="#111827">định dạng, nguồn và phạm vi</text>
+<polygon points="1495.0,1835.0 1660.0,1905 1495.0,1975.0 1330.0,1905" fill="#FFF7ED" stroke="#475569" stroke-width="3"/>
+<text x="1495.0" y="1894" text-anchor="middle" font-family="Arial" font-size="19" font-weight="700" fill="#111827">Báo cáo</text>
+<text x="1495.0" y="1917" text-anchor="middle" font-family="Arial" font-size="19" font-weight="700" fill="#111827">hợp lệ?</text>
+<rect x="695" y="1850" width="430" height="100" rx="18" fill="#FEF2F2" stroke="#475569" stroke-width="3"/>
+<text x="910.0" y="1888" text-anchor="middle" font-family="Arial" font-size="20" font-weight="700" fill="#111827">Cách ly báo cáo</text>
+<text x="910.0" y="1914" text-anchor="middle" font-family="Arial" font-size="20" font-weight="700" fill="#111827">và ghi lỗi tiếp nhận</text>
+<rect x="1280" y="2070" width="430" height="110" rx="18" fill="#FFFFFF" stroke="#475569" stroke-width="3"/>
+<text x="1495.0" y="2108" text-anchor="middle" font-family="Arial" font-size="20" font-weight="700" fill="#111827">Lưu artifact, tạo import_batch,</text>
+<text x="1495.0" y="2134" text-anchor="middle" font-family="Arial" font-size="20" font-weight="700" fill="#111827">chuẩn hóa và chống trùng</text>
+<rect x="110" y="2210" width="430" height="100" rx="18" fill="#FFFFFF" stroke="#475569" stroke-width="3"/>
+<text x="325.0" y="2248" text-anchor="middle" font-family="Arial" font-size="20" font-weight="700" fill="#111827">Xác nhận Final Severity</text>
+<text x="325.0" y="2274" text-anchor="middle" font-family="Arial" font-size="20" font-weight="700" fill="#111827">và phân công khắc phục</text>
+<rect x="695" y="2210" width="430" height="100" rx="18" fill="#FFFFFF" stroke="#475569" stroke-width="3"/>
+<text x="910.0" y="2248" text-anchor="middle" font-family="Arial" font-size="20" font-weight="700" fill="#111827">Sửa lỗi, cập nhật tiến độ</text>
+<text x="910.0" y="2274" text-anchor="middle" font-family="Arial" font-size="20" font-weight="700" fill="#111827">và bằng chứng</text>
+<rect x="1280" y="2360" width="430" height="100" rx="18" fill="#FFFFFF" stroke="#475569" stroke-width="3"/>
+<text x="1495.0" y="2398" text-anchor="middle" font-family="Arial" font-size="20" font-weight="700" fill="#111827">Tạo và điều phối</text>
+<text x="1495.0" y="2424" text-anchor="middle" font-family="Arial" font-size="20" font-weight="700" fill="#111827">lần quét xác minh</text>
+<rect x="110" y="2360" width="430" height="100" rx="18" fill="#F0FDF4" stroke="#475569" stroke-width="3"/>
+<text x="325.0" y="2398" text-anchor="middle" font-family="Arial" font-size="20" font-weight="700" fill="#111827">Đóng nếu coverage đạt;</text>
+<text x="325.0" y="2424" text-anchor="middle" font-family="Arial" font-size="20" font-weight="700" fill="#111827">nếu chưa đạt thì mở lại</text>
+<polyline points="325,215 325,270" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<polyline points="325.0,362 325.0,410" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<polyline points="325.0,502 325.0,520 910.0,520 910.0,550" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<polyline points="910.0,642 910.0,660 325.0,660 325.0,690" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<polyline points="325.0,782 325.0,800 1495.0,800 1495.0,830" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<polyline points="1495.0,922 1495.0,975" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<polyline points="1315.0,1050 1125,1050 1125,1030.0" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<text x="1285.0" y="1039" text-anchor="start" font-family="Arial" font-size="17" font-weight="700" fill="#64748B">Không</text>
+<polyline points="1495.0,1125 1495.0,1180" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<text x="1515.0" y="1152" text-anchor="start" font-family="Arial" font-size="17" font-weight="700" fill="#64748B">Có</text>
+<polyline points="1495.0,1272 1495.0,1290 2080.0,1290 2080.0,1320" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<polyline points="2080.0,1430 2080.0,1475" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<polyline points="1915.0,1545 1125,1545 1125,1545.0" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<text x="1880.0" y="1534" text-anchor="start" font-family="Arial" font-size="17" font-weight="700" fill="#64748B">Không</text>
+<polyline points="2080.0,1615 2080.0,1650 1495.0,1650 1495.0,1690" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<text x="2100.0" y="1642" text-anchor="start" font-family="Arial" font-size="17" font-weight="700" fill="#64748B">Có</text>
+<polyline points="1495.0,1800 1495.0,1835" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<polyline points="1330.0,1905 1125,1905 1125,1900.0" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<text x="1295.0" y="1894" text-anchor="start" font-family="Arial" font-size="17" font-weight="700" fill="#64748B">Không</text>
+<polyline points="1495.0,1975 1495.0,2070" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<text x="1515.0" y="2002" text-anchor="start" font-family="Arial" font-size="17" font-weight="700" fill="#64748B">Có</text>
+<polyline points="1495.0,2180 1495.0,2190 325.0,2190 325.0,2210" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<polyline points="540,2260.0 695,2260.0" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<polyline points="910.0,2310 910.0,2335 1495.0,2335 1495.0,2360" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<polyline points="1280,2410.0 540,2410.0" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round" marker-end="url(#arrow)"/>
+<polyline points="325.0,2460 325.0,2500" fill="none" stroke="#475569" stroke-width="4" stroke-linejoin="round"/>
+<circle cx="325.0" cy="2500" r="18" fill="#FFFFFF" stroke="#111827" stroke-width="4"/>
+<circle cx="325.0" cy="2500" r="10" fill="#111827" stroke="#111827" stroke-width="2"/>
+</svg>

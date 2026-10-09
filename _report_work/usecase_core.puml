@@ -1,0 +1,33 @@
+@startuml
+left to right direction
+skinparam dpi 180
+skinparam defaultFontName Arial
+skinparam defaultFontSize 16
+skinparam shadowing false
+actor "Chủ tài sản" as Owner
+actor "Chuyên viên ATTT" as Sec
+actor "Vận hành quét" as Ops
+actor "Nhóm khắc phục" as Fix
+actor "OWASP ZAP" as Zap
+rectangle "HTQLHDK" {
+  usecase "Khai báo tài sản\nvà phạm vi" as U1
+  usecase "Phê duyệt phạm vi\nvà hồ sơ quét" as U2
+  usecase "Lập lịch và theo dõi\nlần quét" as U3
+  usecase "Nhận và kiểm tra\nbáo cáo ZAP" as U4
+  usecase "Phân tích phát hiện\nvà xác nhận mức độ" as U5
+  usecase "Giao và cập nhật\nphiếu khắc phục" as U6
+  usecase "Quét xác minh,\nđóng hoặc mở lại" as U7
+  usecase "Xem nhật ký\nvà trạng thái" as U8
+}
+Owner --> U1
+Owner --> U3
+Sec --> U2
+Sec --> U3
+Sec --> U5
+Sec --> U6
+Sec --> U7
+Ops --> U3
+Ops --> U8
+Fix --> U6
+Zap --> U4
+@enduml
